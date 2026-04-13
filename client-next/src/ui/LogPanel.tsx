@@ -1,44 +1,50 @@
-import { useState, useRef, useEffect } from 'react'
-import { useShallow } from 'zustand/react/shallow'
+import { useRef, useEffect } from 'react'
+import { useShallow } from 'zustand/shallow'
 import { useLogStore } from '../stores/logStore'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import type { LogEntry } from '../types/protocol'
 
 function LogList({ entries }: { entries: LogEntry[] }) {
   const ref = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    ref.current?.scrollTo(0, ref.current.scrollHeight)
-  }, [entries.length])
-
+  useEffect(() => { ref.current?.scrollTo(0, ref.current.scrollHeight) }, [entries.length])
   return (
-    <div ref={ref} className="flex-1 overflow-y-auto font-mono text-[11px] p-1">
-      {entries.map((e, i) => (
-        <div key={i} className={e.log_type === 'LOGERR' ? 'text-red-400' : 'text-gray-400'}>
-          <span className="text-gray-600 mr-2">[{e.step}]</span>{e.log_message}
-        </div>
-      ))}
-    </div>
+    <ScrollArea className="h-full">
+      <div ref={ref} className="p-2 font-mono text-[11px] space-y-0.5">
+        {entries.length === 0 && <div className="text-muted-foreground text-center py-4">No entries</div>}
+        {entries.map((e, i) => (
+          <div key={i} className={e.log_type === 'LOGERR' ? 'text-destructive' : 'text-muted-foreground'}>
+            <span className="text-muted-foreground/50 mr-2">[{e.step}]</span>{e.log_message}
+          </div>
+        ))}
+      </div>
+    </ScrollArea>
   )
 }
 
 export function LogPanel() {
-  const [tab, setTab] = useState<'log' | 'errors'>('log')
-  const { logs, errors, clear } = useLogStore(
-    useShallow((s) => ({ logs: s.logs, errors: s.errors, clear: s.clear }))
-  )
-
-  const tabCls = (t: string) =>
-    `px-2 py-0.5 text-xs rounded-t ${tab === t ? 'bg-white/10 text-gray-200' : 'text-gray-500 hover:text-gray-300'}`
+  const { logs, errors, clear } = useLogStore(useShallow((s) => ({ logs: s.logs, errors: s.errors, clear: s.clear })))
 
   return (
-    <div className="h-full flex flex-col bg-[#12122a] border-t border-white/10">
-      <div className="flex items-center gap-1 px-2 pt-1">
-        <button className={tabCls('log')} onClick={() => setTab('log')}>Log</button>
-        <button className={tabCls('errors')} onClick={() => setTab('errors')}>
-          Errors {errors.length > 0 && <span className="text-red-400 ml-1">({errors.length})</span>}
-        </button>
-        <button onClick={clear} className="ml-auto text-[10px] text-gray-500 hover:text-gray-300">Clear</button>
-      </div>
-      <LogList entries={tab === 'log' ? logs : errors} />
+    <div className="h-full flex flex-col bg-card border-t">
+      <Tabs defaultValue="log" className="flex flex-col h-full">
+        <div className="flex items-center px-2 pt-1">
+          <TabsList className="h-7">
+            <TabsTrigger value="log" className="text-xs px-2 py-0.5">Log</TabsTrigger>
+            <TabsTrigger value="errors" className="text-xs px-2 py-0.5">
+              Errors
+              {errors.length > 0 && <Badge variant="destructive" className="ml-1.5 h-4 px-1 text-[10px]">{errors.length}</Badge>}
+            </TabsTrigger>
+          </TabsList>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs text-muted-foreground" onClick={clear}>
+            Clear
+          </Button>
+        </div>
+        <TabsContent value="log" className="flex-1 mt-0"><LogList entries={logs} /></TabsContent>
+        <TabsContent value="errors" className="flex-1 mt-0"><LogList entries={errors} /></TabsContent>
+      </Tabs>
     </div>
   )
 }

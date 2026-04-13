@@ -1,42 +1,27 @@
-import { Panel, Group as PanelGroup, Separator } from 'react-resizable-panels'
 import { Toolbar } from './Toolbar'
 import { Sidebar } from './Sidebar'
 import { LogPanel } from './LogPanel'
 import { Scene } from '../scene/Scene'
-
-function ResizeHandle({ direction }: { direction: 'horizontal' | 'vertical' }) {
-  return (
-    <Separator
-      className={`${
-        direction === 'horizontal' ? 'w-1' : 'h-1'
-      } bg-white/5 hover:bg-blue-500/40 transition-colors`}
-    />
-  )
-}
+import { Separator } from '@/components/ui/separator'
 
 export function Layout() {
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
       <Toolbar />
-      <PanelGroup direction="horizontal" className="flex-1">
-        <Panel defaultSize={75} min={40}>
-          <PanelGroup direction="vertical">
-            <Panel defaultSize={75} min={30}>
-              <div className="relative w-full h-full">
-                <Scene />
-              </div>
-            </Panel>
-            <ResizeHandle direction="vertical" />
-            <Panel defaultSize={25} min={10}>
-              <LogPanel />
-            </Panel>
-          </PanelGroup>
-        </Panel>
-        <ResizeHandle direction="horizontal" />
-        <Panel defaultSize={25} min={15}>
+      <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-col flex-1 overflow-hidden">
+          <div className="flex-[3] relative min-h-0">
+            <Scene />
+          </div>
+          <div className="flex-1 min-h-[120px]">
+            <LogPanel />
+          </div>
+        </div>
+        <Separator orientation="vertical" />
+        <div className="w-72 overflow-hidden">
           <Sidebar />
-        </Panel>
-      </PanelGroup>
+        </div>
+      </div>
     </div>
   )
 }

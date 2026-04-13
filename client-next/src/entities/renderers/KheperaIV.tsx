@@ -35,11 +35,11 @@ export function KheperaIV({ entity, selected, onClick }: EntityRendererProps) {
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={selected ? '#667788' : '#445566'}
-          metalness={0.3}
-          roughness={0.4}
-          clearcoat={0.6}
-          clearcoatRoughness={0.2}
+          color={selected ? '#5577aa' : '#2a3a4a'}
+          metalness={0.4}
+          roughness={0.35}
+          clearcoat={0.8}
+          clearcoatRoughness={0.15}
         />
       </mesh>
 

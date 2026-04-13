@@ -35,11 +35,11 @@ export function FootBot({ entity, selected, onClick }: EntityRendererProps) {
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={selected ? '#667788' : '#3a3a4a'}
-          metalness={0.2}
-          roughness={0.5}
-          clearcoat={0.4}
-          clearcoatRoughness={0.3}
+          color={selected ? '#5577aa' : '#2a2a3a'}
+          metalness={0.3}
+          roughness={0.4}
+          clearcoat={0.6}
+          clearcoatRoughness={0.2}
         />
       </mesh>
 

@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid, Environment, ContactShadows, Line } from '@react-three/drei'
+import { OrbitControls, Grid, ContactShadows, Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
 import * as THREE from 'three'
-import { useShallow } from 'zustand/react/shallow'
+import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
 import { EntityRenderer } from '../entities/EntityRenderer'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
@@ -12,25 +12,18 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
   const { size, center } = arena
   const hw = size.x / 2, hd = size.y / 2
   const cx = center.x, cy = center.y
-  const points: [number, number, number][] = [
-    [cx - hw, cy - hd, 0],
-    [cx + hw, cy - hd, 0],
-    [cx + hw, cy + hd, 0],
-    [cx - hw, cy + hd, 0],
+  const pts: [number, number, number][] = [
+    [cx - hw, cy - hd, 0], [cx + hw, cy - hd, 0],
+    [cx + hw, cy + hd, 0], [cx - hw, cy + hd, 0],
     [cx - hw, cy - hd, 0],
   ]
-  return <Line points={points} color="#555" lineWidth={1} />
+  return <Line points={pts} color="#bbb" lineWidth={1.5} />
 }
 
 function SceneEntities() {
   const { entities, selectedEntityId, selectEntity } = useExperimentStore(
-    useShallow((s) => ({
-      entities: s.entities,
-      selectedEntityId: s.selectedEntityId,
-      selectEntity: s.selectEntity,
-    }))
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
   )
-
   return (
     <>
       {Array.from(entities.values()).map((entity: AnyEntity) =>
@@ -57,15 +50,19 @@ export function Scene() {
   return (
     <Canvas
       camera={{ position: [5, -5, 5], up: [0, 0, 1], fov: 50 }}
-      className="!absolute inset-0"
+      style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
       shadows
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.2 }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
     >
-      {/* Lighting */}
-      <ambientLight intensity={0.3} />
+      {/* Light neutral background */}
+      <color attach="background" args={['#f0f0f0']} />
+      <fog attach="fog" args={['#f0f0f0', 20, 50]} />
+
+      {/* Lighting — bright and clean */}
+      <ambientLight intensity={0.6} />
       <directionalLight
         position={[8, -6, 12]}
-        intensity={1.5}
+        intensity={1.2}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
@@ -76,55 +73,39 @@ export function Scene() {
         shadow-camera-bottom={-15}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#8888ff" />
+      <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
+      <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
 
-      {/* Environment reflections */}
-      <Environment preset="city" background={false} />
-
-      {/* Soft contact shadows on the ground */}
+      {/* Soft ground shadows */}
       <ContactShadows
         position={[0, 0, -0.001]}
-        rotation={[0, 0, 0]}
-        opacity={0.4}
+        opacity={0.3}
         scale={30}
-        blur={2}
+        blur={2.5}
         far={4}
-        color="#000020"
+        color="#334"
       />
 
       {/* Ground grid */}
       <Grid
         args={[40, 40]}
         cellSize={0.5}
-        cellColor="#222238"
+        cellColor="#ddd"
         sectionSize={5}
-        sectionColor="#333355"
+        sectionColor="#bbb"
         fadeDistance={30}
         fadeStrength={1.5}
         infiniteGrid
         side={THREE.DoubleSide}
       />
 
-      {/* Controls */}
-      <OrbitControls
-        enableDamping
-        dampingFactor={0.08}
-        maxPolarAngle={Math.PI / 2.05}
-        minDistance={0.5}
-        maxDistance={50}
-      />
+      <OrbitControls enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.05} minDistance={0.5} maxDistance={50} />
 
-      {/* Entities */}
       <SceneEntities />
       {arena && <ArenaBounds arena={arena} />}
 
-      {/* Post-processing */}
       <EffectComposer multisampling={0}>
-        <Bloom
-          luminanceThreshold={0.8}
-          luminanceSmoothing={0.3}
-          intensity={0.4}
-        />
+        <Bloom luminanceThreshold={1.0} luminanceSmoothing={0.3} intensity={0.3} />
         <SMAA />
       </EffectComposer>
     </Canvas>

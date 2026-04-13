@@ -1,32 +1,37 @@
-import { useShallow } from 'zustand/react/shallow'
+import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
 import type { AnyEntity, Vec3, Quaternion } from '../types/protocol'
 
-function fmtVec3(v: Vec3) {
-  return `(${v.x.toFixed(3)}, ${v.y.toFixed(3)}, ${v.z.toFixed(3)})`
-}
+const fv = (v: Vec3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`
+const fq = (q: Quaternion) => `${q.x.toFixed(2)}, ${q.y.toFixed(2)}, ${q.z.toFixed(2)}, ${q.w.toFixed(2)}`
 
-function fmtQuat(q: Quaternion) {
-  return `(${q.x.toFixed(3)}, ${q.y.toFixed(3)}, ${q.z.toFixed(3)}, ${q.w.toFixed(3)})`
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex justify-between items-baseline py-0.5">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className="text-xs font-mono">{value}</span>
+    </div>
+  )
 }
 
 function Inspector({ entity }: { entity: AnyEntity }) {
   if (!('position' in entity)) return null
-  const row = 'flex justify-between text-xs py-0.5'
   return (
-    <div className="p-2 border-b border-white/10">
-      <h3 className="text-xs font-semibold text-gray-300 mb-1">Inspector</h3>
-      <div className={row}><span className="text-gray-500">ID</span><span className="text-gray-300">{entity.id}</span></div>
-      <div className={row}><span className="text-gray-500">Type</span><span className="text-gray-300">{entity.type}</span></div>
-      <div className={row}><span className="text-gray-500">Position</span><span className="text-gray-300 font-mono">{fmtVec3(entity.position)}</span></div>
-      <div className={row}><span className="text-gray-500">Orientation</span><span className="text-gray-300 font-mono">{fmtQuat(entity.orientation)}</span></div>
-      {'leds' in entity && entity.leds && (
-        <div className={row}><span className="text-gray-500">LEDs</span><span className="text-gray-300">{entity.leds.length}</span></div>
-      )}
+    <div className="p-3 space-y-1">
+      <h3 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">Inspector</h3>
+      <Row label="ID" value={entity.id} />
+      <Row label="Type" value={entity.type} />
+      <Row label="Position" value={fv(entity.position)} />
+      <Row label="Orientation" value={fq(entity.orientation)} />
+      {'leds' in entity && entity.leds && <Row label="LEDs" value={String(entity.leds.length)} />}
       {entity.user_data !== undefined && (
-        <div className="text-xs mt-1">
-          <span className="text-gray-500">User Data</span>
-          <pre className="text-gray-400 text-[10px] mt-0.5 overflow-auto max-h-24">{JSON.stringify(entity.user_data, null, 2)}</pre>
+        <div className="pt-1">
+          <span className="text-xs text-muted-foreground">User Data</span>
+          <pre className="text-[10px] text-muted-foreground mt-1 bg-muted p-1.5 rounded overflow-auto max-h-24">
+            {JSON.stringify(entity.user_data, null, 2)}
+          </pre>
         </div>
       )}
     </div>
@@ -35,32 +40,40 @@ function Inspector({ entity }: { entity: AnyEntity }) {
 
 export function Sidebar() {
   const { entities, selectedEntityId, selectEntity } = useExperimentStore(
-    useShallow((s) => ({
-      entities: s.entities,
-      selectedEntityId: s.selectedEntityId,
-      selectEntity: s.selectEntity,
-    }))
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
   )
-
   const selected = selectedEntityId ? entities.get(selectedEntityId) : undefined
 
   return (
-    <div className="h-full flex flex-col bg-[#12122a] text-gray-300 overflow-hidden">
-      {selected && <Inspector entity={selected} />}
-      <div className="flex-1 overflow-y-auto p-2">
-        <h3 className="text-xs font-semibold text-gray-400 mb-1">Entities ({entities.size})</h3>
-        {Array.from(entities.values()).map((e) => (
-          <button
-            key={e.id}
-            onClick={() => selectEntity(e.id)}
-            className={`block w-full text-left text-xs px-2 py-0.5 rounded truncate ${
-              e.id === selectedEntityId ? 'bg-white/15 text-white' : 'hover:bg-white/5'
-            }`}
-          >
-            {e.id} <span className="text-gray-500">({e.type})</span>
-          </button>
-        ))}
+    <div className="h-full flex flex-col bg-card">
+      {selected && (
+        <>
+          <Inspector entity={selected} />
+          <Separator />
+        </>
+      )}
+      <div className="px-3 pt-2 pb-1">
+        <h3 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground">
+          Entities ({entities.size})
+        </h3>
       </div>
+      <ScrollArea className="flex-1">
+        <div className="px-2 pb-2">
+          {Array.from(entities.values()).map((e) => (
+            <button
+              key={e.id}
+              onClick={() => selectEntity(e.id)}
+              className={`block w-full text-left text-xs px-2 py-1 rounded truncate transition-colors ${
+                e.id === selectedEntityId
+                  ? 'bg-primary text-primary-foreground'
+                  : 'hover:bg-accent text-foreground'
+              }`}
+            >
+              {e.id} <span className={e.id === selectedEntityId ? 'text-primary-foreground/70' : 'text-muted-foreground'}>({e.type})</span>
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
     </div>
   )
 }
