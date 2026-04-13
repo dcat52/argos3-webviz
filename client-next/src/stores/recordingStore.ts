@@ -17,8 +17,6 @@ interface RecordingStore {
   totalFrames: number
   speed: number
   playing: boolean
-  _rafId: number | null
-  _savedUrl: string | null
 
   startRecording: () => void
   stopRecording: () => void
@@ -32,6 +30,47 @@ interface RecordingStore {
   seekTo: (idx: number) => void
 }
 
+let rafId: number | null = null
+let savedUrl: string | null = null
+let replayStart: number | null = null
+
+function stopLoop() {
+  if (rafId) { cancelAnimationFrame(rafId); rafId = null }
+  replayStart = null
+}
+
+function playLoop() {
+  stopLoop()
+  const tick = (now: number) => {
+    const s = useRecordingStore.getState()
+    if (!s.playing || s.state !== 'replaying' || s.frames.length === 0) return
+
+    if (replayStart === null) replayStart = now
+
+    const elapsed = (now - replayStart) * s.speed
+    const baseTime = s.frames[0].timestamp
+
+    // Find the frame matching elapsed time
+    let idx = s.frameIndex
+    while (idx < s.frames.length - 1 && (s.frames[idx + 1].timestamp - baseTime) <= elapsed) {
+      idx++
+    }
+
+    if (idx !== s.frameIndex) {
+      useRecordingStore.setState({ frameIndex: idx })
+      useExperimentStore.getState().applyBroadcast(s.frames[idx].message)
+    }
+
+    if (idx >= s.frames.length - 1) {
+      useRecordingStore.setState({ playing: false })
+      return
+    }
+
+    rafId = requestAnimationFrame(tick)
+  }
+  rafId = requestAnimationFrame(tick)
+}
+
 export const useRecordingStore = create<RecordingStore>((set, get) => ({
   state: 'idle',
   frames: [],
@@ -39,8 +78,6 @@ export const useRecordingStore = create<RecordingStore>((set, get) => ({
   totalFrames: 0,
   speed: 1,
   playing: false,
-  _rafId: null,
-  _savedUrl: null,
 
   startRecording: () => set({ state: 'recording', frames: [], frameIndex: 0, totalFrames: 0 }),
 
@@ -75,32 +112,35 @@ export const useRecordingStore = create<RecordingStore>((set, get) => ({
   startReplay: () => {
     const { frames } = get()
     if (frames.length === 0) return
-    // Disconnect live WS
-    const url = useConnectionStore.getState().url
+    savedUrl = useConnectionStore.getState().url
     useConnectionStore.getState().disconnect()
-    set({ state: 'replaying', frameIndex: 0, playing: true, _savedUrl: url })
-    // Apply first frame
+    set({ state: 'replaying', frameIndex: 0, playing: true })
     useExperimentStore.getState().applyBroadcast(frames[0].message)
-    get()._playLoop()
+    replayStart = null
+    playLoop()
   },
 
   stopReplay: () => {
-    const { _rafId, _savedUrl } = get()
-    if (_rafId) cancelAnimationFrame(_rafId)
-    set({ state: 'idle', playing: false, _rafId: null })
-    // Reconnect
-    if (_savedUrl) useConnectionStore.getState().connect(_savedUrl)
+    stopLoop()
+    set({ state: 'idle', playing: false })
+    if (savedUrl) useConnectionStore.getState().connect(savedUrl)
   },
 
   togglePlayPause: () => {
-    const { playing } = get()
+    const { playing, frameIndex, frames } = get()
     if (playing) {
-      const { _rafId } = get()
-      if (_rafId) cancelAnimationFrame(_rafId)
-      set({ playing: false, _rafId: null })
+      stopLoop()
+      set({ playing: false })
     } else {
-      set({ playing: true })
-      get()._playLoop()
+      // If at end, restart
+      if (frameIndex >= frames.length - 1) {
+        set({ frameIndex: 0, playing: true })
+        useExperimentStore.getState().applyBroadcast(frames[0].message)
+      } else {
+        set({ playing: true })
+      }
+      replayStart = null
+      playLoop()
     }
   },
 
@@ -109,28 +149,9 @@ export const useRecordingStore = create<RecordingStore>((set, get) => ({
   seekTo: (idx) => {
     const { frames } = get()
     if (idx >= 0 && idx < frames.length) {
-      set({ frameIndex: idx })
+      stopLoop()
+      set({ frameIndex: idx, playing: false })
       useExperimentStore.getState().applyBroadcast(frames[idx].message)
     }
-  },
-
-  _playLoop() {
-    const { frames, frameIndex, speed } = get()
-    if (frameIndex >= frames.length - 1) {
-      set({ playing: false, _rafId: null })
-      return
-    }
-    const nextIdx = frameIndex + 1
-    const dt = (frames[nextIdx].timestamp - frames[frameIndex].timestamp) / speed
-
-    const id = requestAnimationFrame(() => {
-      setTimeout(() => {
-        if (!get().playing || get().state !== 'replaying') return
-        set({ frameIndex: nextIdx })
-        useExperimentStore.getState().applyBroadcast(frames[nextIdx].message)
-        get()._playLoop()
-      }, Math.max(0, dt))
-    })
-    set({ _rafId: id })
   },
 }))
