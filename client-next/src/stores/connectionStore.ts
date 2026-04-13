@@ -42,8 +42,10 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     conn.onMessage = (msg) => {
       switch (msg.type) {
         case 'broadcast':
-          useExperimentStore.getState().applyBroadcast(msg)
-          useRecordingStore.getState().captureFrame(msg)
+        case 'schema':
+        case 'delta':
+          useExperimentStore.getState().applyMessage(msg)
+          if (msg.type === 'broadcast') useRecordingStore.getState().captureFrame(msg)
           break
         case 'log':
           useLogStore.getState().addMessages(msg.messages)

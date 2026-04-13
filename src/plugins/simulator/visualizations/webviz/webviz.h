@@ -170,6 +170,15 @@ namespace argos {
     /** User functions */
     CWebvizUserFunctions* m_pcUserFunctions = nullptr;
 
+    /** Whether to use delta encoding for broadcasts */
+    bool m_bDeltaMode = false;
+
+    /** Previous entities JSON for delta computation */
+    nlohmann::json m_cPrevEntities;
+
+    /** Whether schema has been sent */
+    bool m_bSchemaSent = false;
+
     /**
      * @brief Function which run in Simulation thread
      *

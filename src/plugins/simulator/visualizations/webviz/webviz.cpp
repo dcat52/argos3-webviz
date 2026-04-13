@@ -11,6 +11,8 @@
 
 #include "webviz.h"
 
+#include <unordered_map>
+
 namespace argos {
 
   /****************************************/
@@ -42,6 +44,8 @@ namespace argos {
       t_tree, "broadcast_frequency", unBroadcastFrequency, UInt16(10));
     GetNodeAttributeOrDefault(
       t_tree, "ff_draw_frames_every", m_unDrawFrameEvery, UInt16(2));
+    GetNodeAttributeOrDefault(
+      t_tree, "delta", m_bDeltaMode, false);
 
     /* Get options for ssl certificate from XML */
     GetNodeAttributeOrDefault(
@@ -491,6 +495,7 @@ namespace argos {
     }
 
     m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_INITIALIZED;
+    m_bSchemaSent = false;  /* Re-send schema on next broadcast */
 
     /* Change state and emit signals */
     m_cWebServer->EmitEvent("Experiment reset", m_eExperimentState);
@@ -544,6 +549,8 @@ namespace argos {
     /* Get all entities in the experiment */
     CEntity::TVector& vecEntities = m_cSpace.GetRootEntityVector();
 
+    nlohmann::json cCurrentEntities = nlohmann::json::array();
+
     for (auto itEntities = vecEntities.begin();  //
          itEntities != vecEntities.end();        //
          ++itEntities) {
@@ -562,13 +569,65 @@ namespace argos {
           cEntityJSON["user_data"] = user_data;
         }
 
-        cStateJson["entities"].push_back(cEntityJSON);
+        cCurrentEntities.push_back(cEntityJSON);
       } else {
         LOGERR << "[ERROR] Unknown Entity:"
                << (**itEntities).GetTypeDescription() << "\n"
                << "Please register a class to convert Entity to JSON, "
                << "Check documentation for how to implement custom entity";
       }
+    }
+
+    /************* Delta encoding *************/
+    if (m_bDeltaMode) {
+      if (!m_bSchemaSent) {
+        /* Send full schema first */
+        cStateJson["type"] = "schema";
+        cStateJson["entities"] = cCurrentEntities;
+        m_cPrevEntities = cCurrentEntities;
+        m_bSchemaSent = true;
+      } else {
+        /* Compute delta */
+        cStateJson["type"] = "delta";
+        nlohmann::json cDelta = nlohmann::json::object();
+
+        /* Build prev lookup */
+        std::unordered_map<std::string, const nlohmann::json*> mapPrev;
+        for (auto& e : m_cPrevEntities) {
+          mapPrev[e["id"].get<std::string>()] = &e;
+        }
+
+        for (auto& cEntity : cCurrentEntities) {
+          const std::string& strId = cEntity["id"].get<std::string>();
+          auto it = mapPrev.find(strId);
+
+          if (it == mapPrev.end()) {
+            cDelta[strId] = cEntity;
+            continue;
+          }
+
+          const nlohmann::json& cPrev = *(it->second);
+          nlohmann::json cChanged;
+
+          for (auto& [key, val] : cEntity.items()) {
+            if (key == "type" || key == "id") continue;
+            if (!cPrev.contains(key) || cPrev[key] != val) {
+              cChanged[key] = val;
+            }
+          }
+
+          if (!cChanged.empty()) {
+            cDelta[strId] = std::move(cChanged);
+          }
+        }
+
+        cStateJson["entities"] = std::move(cDelta);
+        m_cPrevEntities = cCurrentEntities;
+      }
+    } else {
+      /* Legacy full broadcast */
+      cStateJson["type"] = "broadcast";
+      cStateJson["entities"] = std::move(cCurrentEntities);
     }
 
     /************* get data from User functions for experiment *************/

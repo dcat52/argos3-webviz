@@ -106,6 +106,26 @@ export interface BroadcastMessage {
   user_data?: unknown
 }
 
+export interface SchemaMessage {
+  type: 'schema'
+  state?: ExperimentState
+  steps?: number
+  timestamp?: number
+  arena: ArenaInfo
+  entities: AnyEntity[]
+  user_data?: unknown
+}
+
+export interface DeltaMessage {
+  type: 'delta'
+  state?: ExperimentState
+  steps?: number
+  timestamp?: number
+  arena?: ArenaInfo
+  entities: Record<string, Partial<AnyEntity>>
+  user_data?: unknown
+}
+
 export interface EventMessage {
   type: 'event'
   event: string
@@ -124,7 +144,7 @@ export interface LogMessage {
   messages: LogEntry[]
 }
 
-export type ServerMessage = BroadcastMessage | EventMessage | LogMessage
+export type ServerMessage = BroadcastMessage | SchemaMessage | DeltaMessage | EventMessage | LogMessage
 
 // --- Client Commands ---
 
