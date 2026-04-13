@@ -1,5 +1,5 @@
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw } from 'lucide-react'
+import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PerspectiveSelector } from './PerspectiveSelector'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -46,6 +47,8 @@ export function Toolbar() {
 
   const envPreset = useSceneSettingsStore((s) => s.envPreset)
   const setEnvPreset = useSceneSettingsStore((s) => s.setEnvPreset)
+  const showFps = useSceneSettingsStore((s) => s.showFps)
+  const toggleFps = useSceneSettingsStore((s) => s.toggleFps)
 
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
@@ -66,6 +69,10 @@ export function Toolbar() {
       <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} />
       <Separator orientation="vertical" className="h-5" />
       <span className="text-xs font-mono text-muted-foreground">Step {steps}</span>
+      <Separator orientation="vertical" className="h-5" />
+      <PerspectiveSelector />
+      <Separator orientation="vertical" className="h-5" />
+      <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
       <div className="ml-auto flex items-center gap-2">
         <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as 'grid' | 'grass' | 'mountain')}>
           <SelectTrigger className="h-7 w-28 text-xs">

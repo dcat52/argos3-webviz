@@ -5,6 +5,7 @@ export interface EntityRendererProps {
   entity: AnyEntity
   selected?: boolean
   onClick?: () => void
+  onDoubleClick?: () => void
 }
 
 export type EntityRenderer = ComponentType<EntityRendererProps>

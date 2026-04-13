@@ -1,7 +1,7 @@
 import { EntityRendererProps } from '../registry'
 import { BoxEntity } from '../../types/protocol'
 
-export function BoxRenderer({ entity, selected, onClick }: EntityRendererProps) {
+export function BoxRenderer({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
   const e = entity as BoxEntity
   const { position: p, orientation: q, scale: s } = e
   return (
@@ -9,6 +9,7 @@ export function BoxRenderer({ entity, selected, onClick }: EntityRendererProps) 
       position={[p.x, p.y, p.z + s.z / 2]}
       quaternion={[q.x, q.y, q.z, q.w]}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
       castShadow
       receiveShadow
     >

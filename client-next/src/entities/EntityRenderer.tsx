@@ -7,9 +7,10 @@ interface Props {
   entity: AnyEntity
   selected?: boolean
   onClick?: () => void
+  onDoubleClick?: () => void
 }
 
-export function EntityRenderer({ entity, selected, onClick }: Props) {
+export function EntityRenderer({ entity, selected, onClick, onDoubleClick }: Props) {
   const Renderer = entityRegistry.get(entity.type) ?? DefaultEntity
-  return <Renderer entity={entity} selected={selected} onClick={onClick} />
+  return <Renderer entity={entity} selected={selected} onClick={onClick} onDoubleClick={onDoubleClick} />
 }

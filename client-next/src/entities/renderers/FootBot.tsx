@@ -15,7 +15,7 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function FootBot({ entity, selected, onClick }: EntityRendererProps) {
+export function FootBot({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
   const e = entity as FootBotEntity
   const { position: p, orientation: q } = e
 
@@ -31,7 +31,7 @@ export function FootBot({ entity, selected, onClick }: EntityRendererProps) {
   const rays = useMemo(() => e.rays.map(parseRay), [e.rays])
 
   return (
-    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick}>
+    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick}>
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial

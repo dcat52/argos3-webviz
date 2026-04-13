@@ -1,13 +1,17 @@
-import { useEffect, useRef } from 'react'
-import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, Line } from '@react-three/drei'
+import { useCallback } from 'react'
+import { Canvas } from '@react-three/fiber'
+import { Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
+import { useCameraStore } from '../stores/cameraStore'
 import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
+import { CameraController } from './CameraController'
+import { SelectionRing } from './SelectionRing'
+import { FPSCounter } from './FPSCounter'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
 
 function ArenaBounds({ arena }: { arena: ArenaInfo }) {
@@ -22,44 +26,35 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
   return <Line points={pts} color="#bbb" lineWidth={1.5} />
 }
 
-function CameraSetup() {
-  const arena = useExperimentStore((s) => s.arena)
-  const { camera } = useThree()
-  const initialized = useRef(false)
-
-  useEffect(() => {
-    if (!arena || initialized.current) return
-    initialized.current = true
-    const dist = Math.max(arena.size.x, arena.size.y) * 1.2
-    const azimuth = -Math.PI / 2 + Math.PI / 6
-    const elevation = Math.PI / 5
-    const cx = arena.center.x, cy = arena.center.y
-    camera.position.set(
-      cx + dist * Math.cos(elevation) * Math.sin(azimuth),
-      cy + dist * Math.cos(elevation) * Math.cos(azimuth),
-      dist * Math.sin(elevation)
-    )
-    camera.lookAt(cx, cy, 0)
-    camera.updateProjectionMatrix()
-  }, [arena, camera])
-
-  return null
-}
-
 function SceneEntities() {
   const { entities, selectedEntityId, selectEntity } = useExperimentStore(
     useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
   )
+  const flyTo = useCameraStore((s) => s.flyTo)
+
+  const handleDoubleClick = useCallback((entity: AnyEntity) => {
+    if ('position' in entity) {
+      flyTo([entity.position.x, entity.position.y, entity.position.z])
+    }
+  }, [flyTo])
+
   return (
     <>
       {Array.from(entities.values()).map((entity: AnyEntity) =>
         'position' in entity ? (
-          <EntityRenderer
-            key={entity.id}
-            entity={entity}
-            selected={entity.id === selectedEntityId}
-            onClick={() => selectEntity(entity.id)}
-          />
+          <group key={entity.id}>
+            <EntityRenderer
+              entity={entity}
+              selected={entity.id === selectedEntityId}
+              onClick={() => selectEntity(entity.id)}
+              onDoubleClick={() => handleDoubleClick(entity)}
+            />
+            {entity.id === selectedEntityId && (
+              <group position={[entity.position.x, entity.position.y, entity.position.z]}>
+                <SelectionRing />
+              </group>
+            )}
+          </group>
         ) : null
       )}
     </>
@@ -71,7 +66,6 @@ THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
 export function Scene() {
   const arena = useExperimentStore((s) => s.arena)
   const envPreset = useSceneSettingsStore((s) => s.envPreset)
-  const target: [number, number, number] = arena ? [arena.center.x, arena.center.y, 0] : [0, 0, 0]
 
   return (
     <Canvas
@@ -80,10 +74,8 @@ export function Scene() {
       shadows
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
     >
-      {/* Environment preset (sets background, fog, ground) */}
       <EnvironmentPreset preset={envPreset} arena={arena} />
 
-      {/* Lighting */}
       <ambientLight intensity={0.6} />
       <directionalLight
         position={[8, -6, 12]}
@@ -101,11 +93,10 @@ export function Scene() {
       <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
       <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
 
-      <OrbitControls target={target} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.05} minDistance={0.5} maxDistance={50} />
-
-      <CameraSetup />
+      <CameraController />
       <SceneEntities />
       {arena && <ArenaBounds arena={arena} />}
+      <FPSCounter />
 
       <EffectComposer multisampling={0}>
         <Bloom luminanceThreshold={1.0} luminanceSmoothing={0.3} intensity={0.3} />

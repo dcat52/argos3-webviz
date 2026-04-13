@@ -1,6 +1,6 @@
 import { EntityRendererProps } from './registry'
 
-export function DefaultEntity({ entity, selected, onClick }: EntityRendererProps) {
+export function DefaultEntity({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
   const hasPosition = 'position' in entity
   const position = hasPosition ? entity.position : { x: 0, y: 0, z: 0 }
   const hasOrientation = 'orientation' in entity
@@ -11,6 +11,7 @@ export function DefaultEntity({ entity, selected, onClick }: EntityRendererProps
       position={[position.x, position.y, position.z]}
       quaternion={[orientation.x, orientation.y, orientation.z, orientation.w]}
       onClick={onClick}
+      onDoubleClick={onDoubleClick}
     >
       <boxGeometry args={[0.1, 0.1, 0.1]} />
       <meshStandardMaterial color={selected ? 'yellow' : 'orange'} />
