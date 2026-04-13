@@ -13,6 +13,18 @@ set(ENTITIES_SOURCE_FILES
 FindARGoSPlugin(KheperaIV kheperaiv_entity)
 if(ARGOS_KheperaIV_FOUND)
   list(APPEND ENTITIES_SOURCE_FILES entity/webviz_kheperaiv.cpp)
+else()
+  # Fallback: check if kheperaiv header exists directly
+  find_path(_KHEPERAIV_FALLBACK kheperaiv_entity.h
+    PATHS /usr/local/include/argos3/plugins
+    PATH_SUFFIXES robots/kheperaiv/simulator)
+  if(_KHEPERAIV_FALLBACK)
+    message("--   KheperaIV found via fallback")
+    list(APPEND ENTITIES_SOURCE_FILES entity/webviz_kheperaiv.cpp)
+    include_directories(/usr/local/include/argos3/plugins/robots/kheperaiv/simulator
+                        /usr/local/include/argos3/plugins/robots/kheperaiv/control_interface)
+    link_libraries(/usr/local/lib/argos3/libargos3plugin_simulator_kheperaiv.so)
+  endif()
 endif(ARGOS_KheperaIV_FOUND)
 
 ############################## PROJECT SETUP ##############################
