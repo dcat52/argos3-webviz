@@ -26,10 +26,13 @@ export function CameraController() {
   const clearFlyTo = useCameraStore((s) => s.clearFlyTo)
   const arena = useExperimentStore((s) => s.arena)
   const prevPreset = useRef(preset)
+  const initialized = useRef(false)
 
-  // Apply preset changes
+  // Apply preset changes (not on every arena update)
   useEffect(() => {
     if (!ref.current || !arena) return
+    if (initialized.current && preset === prevPreset.current) return
+    initialized.current = true
     const dist = Math.max(arena.size.x, arena.size.y) * 1.2
     const { pos, target } = getPresetPos(preset, arena.center.x, arena.center.y, dist)
     ref.current.setLookAt(pos[0], pos[1], pos[2], target[0], target[1], target[2], true)
