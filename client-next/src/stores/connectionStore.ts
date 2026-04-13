@@ -22,12 +22,12 @@ interface ConnectionState {
 
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
   status: 'disconnected',
-  url: 'ws://localhost:3000',
+  url: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3000`,
   connection: null,
 
   connect: (url?: string) => {
     get().connection?.disconnect()
-    const target = url ?? get().url
+    const target = url ?? get().url ?? `ws://${window.location.hostname}:3000`
     set({ url: target })
 
     const conn = new WebvizConnection({

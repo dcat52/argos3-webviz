@@ -48,7 +48,11 @@ export class WebvizConnection {
     this.setStatus('connecting')
     this.ws = new WebSocket(url)
 
-    this.ws.onopen = () => this.setStatus('connected')
+    this.ws.onopen = () => {
+      console.log('[WebvizConnection] connected to', url)
+      this.reconnectDelay = this.config.reconnectInterval ?? 1000
+      this.setStatus('connected')
+    }
 
     this.ws.onmessage = (ev: MessageEvent) => {
       if (!this.onMessage) return
@@ -60,7 +64,8 @@ export class WebvizConnection {
       }
     }
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (ev) => {
+      console.log('[WebvizConnection] closed:', ev.code, ev.reason)
       this.ws = null
       this.setStatus('disconnected')
       if (!this.intentionalClose && this.config.reconnect !== false) {
@@ -68,8 +73,8 @@ export class WebvizConnection {
       }
     }
 
-    this.ws.onerror = () => {
-      // onclose will fire after onerror
+    this.ws.onerror = (ev) => {
+      console.error('[WebvizConnection] error:', ev)
     }
   }
 
@@ -89,11 +94,7 @@ export class WebvizConnection {
   }
 
   private buildUrl(): string {
-    const base = this.config.url
-    const channels = this.config.channels
-    if (!channels?.length) return base
-    const sep = base.includes('?') ? '&' : '?'
-    return base + sep + channels.join(',')
+    return this.config.url
   }
 
   private scheduleReconnect(): void {

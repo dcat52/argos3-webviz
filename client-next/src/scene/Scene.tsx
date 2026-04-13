@@ -1,11 +1,13 @@
-import { useEffect } from 'react'
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid, ContactShadows, Line } from '@react-three/drei'
+import { useEffect, useRef } from 'react'
+import { Canvas, useThree } from '@react-three/fiber'
+import { OrbitControls, ContactShadows, Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
+import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
 import { EntityRenderer } from '../entities/EntityRenderer'
+import { EnvironmentPreset } from './EnvironmentPreset'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
 
 function ArenaBounds({ arena }: { arena: ArenaInfo }) {
@@ -18,6 +20,30 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
     [cx - hw, cy - hd, 0],
   ]
   return <Line points={pts} color="#bbb" lineWidth={1.5} />
+}
+
+function CameraSetup() {
+  const arena = useExperimentStore((s) => s.arena)
+  const { camera } = useThree()
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!arena || initialized.current) return
+    initialized.current = true
+    const dist = Math.max(arena.size.x, arena.size.y) * 1.2
+    const azimuth = -Math.PI / 2 + Math.PI / 6
+    const elevation = Math.PI / 5
+    const cx = arena.center.x, cy = arena.center.y
+    camera.position.set(
+      cx + dist * Math.cos(elevation) * Math.sin(azimuth),
+      cy + dist * Math.cos(elevation) * Math.cos(azimuth),
+      dist * Math.sin(elevation)
+    )
+    camera.lookAt(cx, cy, 0)
+    camera.updateProjectionMatrix()
+  }, [arena, camera])
+
+  return null
 }
 
 function SceneEntities() {
@@ -40,25 +66,24 @@ function SceneEntities() {
   )
 }
 
+THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
+
 export function Scene() {
   const arena = useExperimentStore((s) => s.arena)
-
-  useEffect(() => {
-    THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
-  }, [])
+  const envPreset = useSceneSettingsStore((s) => s.envPreset)
+  const target: [number, number, number] = arena ? [arena.center.x, arena.center.y, 0] : [0, 0, 0]
 
   return (
     <Canvas
-      camera={{ position: [5, -5, 5], up: [0, 0, 1], fov: 50 }}
+      camera={{ position: [0, -12, 10], up: [0, 0, 1], fov: 50 }}
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
       shadows
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
     >
-      {/* Light neutral background */}
-      <color attach="background" args={['#f0f0f0']} />
-      <fog attach="fog" args={['#f0f0f0', 20, 50]} />
+      {/* Environment preset (sets background, fog, ground) */}
+      <EnvironmentPreset preset={envPreset} arena={arena} />
 
-      {/* Lighting — bright and clean */}
+      {/* Lighting */}
       <ambientLight intensity={0.6} />
       <directionalLight
         position={[8, -6, 12]}
@@ -76,31 +101,11 @@ export function Scene() {
       <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
       <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
 
-      {/* Soft ground shadows */}
-      <ContactShadows
-        position={[0, 0, -0.001]}
-        opacity={0.3}
-        scale={30}
-        blur={2.5}
-        far={4}
-        color="#334"
-      />
+      <ContactShadows position={[0, 0, -0.002]} scale={30} blur={2.5} far={4} color="#334" />
 
-      {/* Ground grid */}
-      <Grid
-        args={[40, 40]}
-        cellSize={0.5}
-        cellColor="#ddd"
-        sectionSize={5}
-        sectionColor="#bbb"
-        fadeDistance={30}
-        fadeStrength={1.5}
-        infiniteGrid
-        side={THREE.DoubleSide}
-      />
+      <OrbitControls target={target} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.05} minDistance={0.5} maxDistance={50} />
 
-      <OrbitControls enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.05} minDistance={0.5} maxDistance={50} />
-
+      <CameraSetup />
       <SceneEntities />
       {arena && <ArenaBounds arena={arena} />}
 
