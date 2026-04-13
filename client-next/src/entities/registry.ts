@@ -6,6 +6,7 @@ export interface EntityRendererProps {
   selected?: boolean
   onClick?: () => void
   onDoubleClick?: () => void
+  overrideColor?: string
 }
 
 export type EntityRenderer = ComponentType<EntityRendererProps>

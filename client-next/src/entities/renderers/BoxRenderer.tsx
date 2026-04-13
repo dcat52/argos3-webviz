@@ -1,7 +1,7 @@
 import { EntityRendererProps } from '../registry'
 import { BoxEntity } from '../../types/protocol'
 
-export function BoxRenderer({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
+export function BoxRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
   const e = entity as BoxEntity
   const { position: p, orientation: q, scale: s } = e
   return (
@@ -15,7 +15,7 @@ export function BoxRenderer({ entity, selected, onClick, onDoubleClick }: Entity
     >
       <boxGeometry args={[s.x, s.y, s.z]} />
       <meshPhysicalMaterial
-        color={selected ? '#8899aa' : e.is_movable ? '#4488cc' : '#555566'}
+        color={overrideColor ?? (selected ? '#8899aa' : e.is_movable ? '#4488cc' : '#555566')}
         metalness={0.1}
         roughness={0.7}
       />

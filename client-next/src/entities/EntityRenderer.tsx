@@ -8,9 +8,10 @@ interface Props {
   selected?: boolean
   onClick?: () => void
   onDoubleClick?: () => void
+  overrideColor?: string
 }
 
-export function EntityRenderer({ entity, selected, onClick, onDoubleClick }: Props) {
+export function EntityRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: Props) {
   const Renderer = entityRegistry.get(entity.type) ?? DefaultEntity
-  return <Renderer entity={entity} selected={selected} onClick={onClick} onDoubleClick={onDoubleClick} />
+  return <Renderer entity={entity} selected={selected} onClick={onClick} onDoubleClick={onDoubleClick} overrideColor={overrideColor} />
 }

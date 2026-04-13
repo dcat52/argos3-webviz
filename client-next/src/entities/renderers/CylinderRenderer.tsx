@@ -1,7 +1,7 @@
 import { EntityRendererProps } from '../registry'
 import { CylinderEntity } from '../../types/protocol'
 
-export function CylinderRenderer({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
+export function CylinderRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
   const e = entity as CylinderEntity
   const { position: p, orientation: q } = e
   return (
@@ -9,7 +9,7 @@ export function CylinderRenderer({ entity, selected, onClick, onDoubleClick }: E
       <mesh rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <cylinderGeometry args={[e.radius, e.radius, e.height, 24]} />
         <meshPhysicalMaterial
-          color={selected ? '#8899aa' : e.is_movable ? '#44aa88' : '#555566'}
+          color={overrideColor ?? (selected ? '#8899aa' : e.is_movable ? '#44aa88' : '#555566')}
           metalness={0.1}
           roughness={0.6}
         />

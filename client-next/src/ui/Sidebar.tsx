@@ -2,6 +2,7 @@ import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import { VizConfigPanel } from './VizConfigPanel'
 import type { AnyEntity, Vec3, Quaternion } from '../types/protocol'
 
 const fv = (v: Vec3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`
@@ -73,6 +74,8 @@ export function Sidebar() {
             </button>
           ))}
         </div>
+        <Separator />
+        <VizConfigPanel />
       </ScrollArea>
     </div>
   )

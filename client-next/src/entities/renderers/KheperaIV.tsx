@@ -15,7 +15,7 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function KheperaIV({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
+export function KheperaIV({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
   const e = entity as KheperaIVEntity
   const { position: p, orientation: q } = e
 
@@ -35,7 +35,7 @@ export function KheperaIV({ entity, selected, onClick, onDoubleClick }: EntityRe
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={selected ? '#5577aa' : '#2a3a4a'}
+          color={overrideColor ?? (selected ? '#5577aa' : '#2a3a4a')}
           metalness={0.05}
           roughness={0.8}
           clearcoat={0}

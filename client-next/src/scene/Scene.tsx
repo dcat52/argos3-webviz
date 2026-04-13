@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
@@ -7,11 +7,18 @@ import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
 import { useCameraStore } from '../stores/cameraStore'
+import { useVizConfigStore } from '../stores/vizConfigStore'
 import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
 import { SelectionRing } from './SelectionRing'
 import { FPSCounter } from './FPSCounter'
+import { EntityLinks } from './EntityLinks'
+import { TrailRenderer } from './TrailRenderer'
+import { HeatmapOverlay } from './HeatmapOverlay'
+import { FloatingLabels } from './FloatingLabels'
+import { discoverFields } from '../lib/vizEngine'
+import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
 
 function ArenaBounds({ arena }: { arena: ArenaInfo }) {
@@ -26,11 +33,52 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
   return <Line points={pts} color="#bbb" lineWidth={1.5} />
 }
 
+function useFieldDiscovery() {
+  const entities = useExperimentStore((s) => s.entities)
+  const setFields = useVizConfigStore((s) => s.setFields)
+  const applyHints = useVizConfigStore((s) => s.applyHints)
+  const userData = useExperimentStore((s) => s.userData)
+
+  useEffect(() => {
+    const fields = discoverFields(entities)
+    setFields(fields)
+    if (userData && typeof userData === 'object' && '_viz_hints' in (userData as Record<string, unknown>)) {
+      applyHints((userData as Record<string, unknown>)._viz_hints as Record<string, unknown>)
+    }
+  }, [entities, setFields, applyHints, userData])
+}
+
+function useColorByMap(): Map<string, string> {
+  const entities = useExperimentStore((s) => s.entities)
+  const colorBy = useVizConfigStore((s) => s.config.colorBy)
+
+  return useMemo(() => {
+    const map = new Map<string, string>()
+    if (!colorBy?.enabled || !colorBy.field) return map
+
+    const [min, max] = colorBy.scale === 'linear' ? computeMinMax(entities, colorBy.field) : [0, 1]
+
+    for (const entity of entities.values()) {
+      if (!('user_data' in entity) || !entity.user_data) continue
+      const ud = entity.user_data as Record<string, unknown>
+      const val = ud[colorBy.field]
+      if (val === undefined) continue
+      if (colorBy.scale === 'linear' && typeof val === 'number') {
+        map.set(entity.id, linearScale(val, min, max, colorBy.colorA, colorBy.colorB))
+      } else {
+        map.set(entity.id, categoricalScale(String(val)))
+      }
+    }
+    return map
+  }, [entities, colorBy])
+}
+
 function SceneEntities() {
   const { entities, selectedEntityId, selectEntity } = useExperimentStore(
     useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
+  const colorMap = useColorByMap()
 
   const handleDoubleClick = useCallback((entity: AnyEntity) => {
     if ('position' in entity) {
@@ -48,6 +96,7 @@ function SceneEntities() {
               selected={entity.id === selectedEntityId}
               onClick={() => selectEntity(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
+              overrideColor={colorMap.get(entity.id)}
             />
             {entity.id === selectedEntityId && (
               <group position={[entity.position.x, entity.position.y, entity.position.z]}>
@@ -62,6 +111,24 @@ function SceneEntities() {
 }
 
 THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
+
+function SceneContent() {
+  const arena = useExperimentStore((s) => s.arena)
+  useFieldDiscovery()
+
+  return (
+    <>
+      <CameraController />
+      <SceneEntities />
+      <EntityLinks />
+      <TrailRenderer />
+      <HeatmapOverlay />
+      <FloatingLabels />
+      {arena && <ArenaBounds arena={arena} />}
+      <FPSCounter />
+    </>
+  )
+}
 
 export function Scene() {
   const arena = useExperimentStore((s) => s.arena)
@@ -93,10 +160,7 @@ export function Scene() {
       <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
       <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
 
-      <CameraController />
-      <SceneEntities />
-      {arena && <ArenaBounds arena={arena} />}
-      <FPSCounter />
+      <SceneContent />
 
       <EffectComposer multisampling={0}>
         <Bloom luminanceThreshold={1.0} luminanceSmoothing={0.3} intensity={0.3} />

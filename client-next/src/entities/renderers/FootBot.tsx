@@ -15,7 +15,7 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function FootBot({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
+export function FootBot({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
   const e = entity as FootBotEntity
   const { position: p, orientation: q } = e
 
@@ -35,7 +35,7 @@ export function FootBot({ entity, selected, onClick, onDoubleClick }: EntityRend
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={selected ? '#5577aa' : '#2a2a3a'}
+          color={overrideColor ?? (selected ? '#5577aa' : '#2a2a3a')}
           metalness={0.3}
           roughness={0.4}
           clearcoat={0.6}

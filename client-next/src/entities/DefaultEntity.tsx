@@ -1,6 +1,6 @@
 import { EntityRendererProps } from './registry'
 
-export function DefaultEntity({ entity, selected, onClick, onDoubleClick }: EntityRendererProps) {
+export function DefaultEntity({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
   const hasPosition = 'position' in entity
   const position = hasPosition ? entity.position : { x: 0, y: 0, z: 0 }
   const hasOrientation = 'orientation' in entity
@@ -14,7 +14,7 @@ export function DefaultEntity({ entity, selected, onClick, onDoubleClick }: Enti
       onDoubleClick={onDoubleClick}
     >
       <boxGeometry args={[0.1, 0.1, 0.1]} />
-      <meshStandardMaterial color={selected ? 'yellow' : 'orange'} />
+      <meshStandardMaterial color={overrideColor ?? (selected ? 'yellow' : 'orange')} />
     </mesh>
   )
 }
