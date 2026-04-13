@@ -1,21 +1,26 @@
-import { useMemo } from 'react'
-import * as THREE from 'three'
 import { EntityRendererProps } from '../registry'
 import { LightEntity } from '../../types/protocol'
+
+function parseHex(hex: string): string {
+  return '#' + hex.slice(2)
+}
 
 export function LightRenderer({ entity, onClick }: EntityRendererProps) {
   const e = entity as LightEntity
   const { position: p } = e
-  const color = '#' + e.color.slice(2)
-
-  const geo = useMemo(() => new THREE.SphereGeometry(0.02, 8, 8), [])
-
+  const color = parseHex(e.color)
   return (
     <group position={[p.x, p.y, p.z]} onClick={onClick}>
-      <mesh geometry={geo}>
-        <meshStandardMaterial color={color} emissive={color} emissiveIntensity={2} />
+      <mesh>
+        <sphereGeometry args={[0.03, 16, 16]} />
+        <meshStandardMaterial
+          color={color}
+          emissive={color}
+          emissiveIntensity={3}
+          toneMapped={false}
+        />
       </mesh>
-      <pointLight color={color} intensity={1} distance={5} />
+      <pointLight color={color} intensity={2} distance={5} decay={2} />
     </group>
   )
 }
