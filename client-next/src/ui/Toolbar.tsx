@@ -1,5 +1,6 @@
+import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity } from 'lucide-react'
+import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2 } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -10,6 +11,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Separator } from '@/components/ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PerspectiveSelector } from './PerspectiveSelector'
+import { SettingsPanel } from './SettingsPanel'
+import { useCanvasRef } from '@/stores/canvasRefStore'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -37,7 +40,7 @@ function ToolbarButton({ icon: Icon, label, active, onClick }: {
   )
 }
 
-export function Toolbar() {
+export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElement | null> }) {
   const { status, play, pause, step, fastForward, reset } = useConnectionStore(
     useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset }))
   )
@@ -50,6 +53,9 @@ export function Toolbar() {
   const showFps = useSceneSettingsStore((s) => s.showFps)
   const toggleFps = useSceneSettingsStore((s) => s.toggleFps)
 
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [isFullscreen, setIsFullscreen] = useState(false)
+
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
 
@@ -57,52 +63,79 @@ export function Toolbar() {
   const isFF = state === ExperimentState.EXPERIMENT_FAST_FORWARDING
   const label = state.replace('EXPERIMENT_', '').replace(/_/g, ' ')
 
+  const canvasEl = useCanvasRef((s) => s.gl)
+
+  const takeScreenshot = () => {
+    if (!canvasEl) return
+    canvasEl.render(canvasEl.scene, canvasEl.camera)
+    const url = canvasEl.domElement.toDataURL('image/png')
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `argos-${Date.now()}.png`
+    a.click()
+  }
+
+  const toggleFullscreen = () => {
+    if (!viewportRef?.current) return
+    if (!document.fullscreenElement) {
+      viewportRef.current.requestFullscreen().then(() => setIsFullscreen(true))
+    } else {
+      document.exitFullscreen().then(() => setIsFullscreen(false))
+    }
+  }
+
   return (
-    <div className="flex items-center gap-1.5 h-10 px-3 border-b bg-card">
-      <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
-      <span className="text-xs text-muted-foreground mr-1">{status}</span>
-      <Separator orientation="vertical" className="h-5" />
-      <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} />
-      <ToolbarButton icon={Pause} label="Pause" onClick={pause} />
-      <ToolbarButton icon={SkipForward} label="Step" onClick={step} />
-      <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} />
-      <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} />
-      <Separator orientation="vertical" className="h-5" />
-      <span className="text-xs font-mono text-muted-foreground">Step {steps}</span>
-      <Separator orientation="vertical" className="h-5" />
-      <PerspectiveSelector />
-      <Separator orientation="vertical" className="h-5" />
-      <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
-      <div className="ml-auto flex items-center gap-2">
-        <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as 'grid' | 'grass' | 'mountain')}>
-          <SelectTrigger className="h-7 w-28 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="grid" className="text-xs">🔲 Grid</SelectItem>
-            <SelectItem value="grass" className="text-xs">🌿 Grass</SelectItem>
-            <SelectItem value="mountain" className="text-xs">🏜️ Desert</SelectItem>
-          </SelectContent>
-        </Select>
-        {availableScenes && (
-          <Select
-            value={currentScene || ''}
-            onValueChange={(scene) => {
-              useConnectionStore.getState().send({ command: 'switchScene', scene } as never)
-            }}
-          >
-            <SelectTrigger className="h-7 w-32 text-xs">
-              <SelectValue placeholder="Scene" />
+    <>
+      <div className="flex items-center gap-1.5 h-10 px-3 border-b bg-card">
+        <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
+        <span className="text-xs text-muted-foreground mr-1">{status}</span>
+        <Separator orientation="vertical" className="h-5" />
+        <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} />
+        <ToolbarButton icon={Pause} label="Pause" onClick={pause} />
+        <ToolbarButton icon={SkipForward} label="Step" onClick={step} />
+        <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} />
+        <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} />
+        <Separator orientation="vertical" className="h-5" />
+        <span className="text-xs font-mono text-muted-foreground">Step {steps}</span>
+        <Separator orientation="vertical" className="h-5" />
+        <PerspectiveSelector />
+        <Separator orientation="vertical" className="h-5" />
+        <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
+        <ToolbarButton icon={Camera} label="Screenshot" onClick={takeScreenshot} />
+        <ToolbarButton icon={isFullscreen ? Minimize2 : Maximize2} label="Fullscreen" onClick={toggleFullscreen} />
+        <ToolbarButton icon={Settings} label="Settings" onClick={() => setSettingsOpen(true)} />
+        <div className="ml-auto flex items-center gap-2">
+          <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as 'grid' | 'grass' | 'mountain')}>
+            <SelectTrigger className="h-7 w-28 text-xs">
+              <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              {availableScenes.map((s: string) => (
-                <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
-              ))}
+              <SelectItem value="grid" className="text-xs">🔲 Grid</SelectItem>
+              <SelectItem value="grass" className="text-xs">🌿 Grass</SelectItem>
+              <SelectItem value="mountain" className="text-xs">🏜️ Desert</SelectItem>
             </SelectContent>
           </Select>
-        )}
-        <Badge variant="secondary" className="text-xs font-normal">{label}</Badge>
+          {availableScenes && (
+            <Select
+              value={currentScene || ''}
+              onValueChange={(scene) => {
+                useConnectionStore.getState().send({ command: 'switchScene', scene } as never)
+              }}
+            >
+              <SelectTrigger className="h-7 w-32 text-xs">
+                <SelectValue placeholder="Scene" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableScenes.map((s: string) => (
+                  <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+          <Badge variant="secondary" className="text-xs font-normal">{label}</Badge>
+        </div>
       </div>
-    </div>
+      <SettingsPanel open={settingsOpen} onOpenChange={setSettingsOpen} />
+    </>
   )
 }

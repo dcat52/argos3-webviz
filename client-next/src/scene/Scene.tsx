@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo } from 'react'
-import { Canvas } from '@react-three/fiber'
+import { Canvas, useThree } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
+import { useSettingsStore } from '../stores/settingsStore'
 import { useCameraStore } from '../stores/cameraStore'
 import { useVizConfigStore } from '../stores/vizConfigStore'
+import { useCanvasRef } from '../stores/canvasRefStore'
 import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
@@ -17,6 +19,7 @@ import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
 import { HeatmapOverlay } from './HeatmapOverlay'
 import { FloatingLabels } from './FloatingLabels'
+import { InstancedEntities } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
 import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
@@ -48,7 +51,7 @@ function useFieldDiscovery() {
   }, [entities, setFields, applyHints, userData])
 }
 
-function useColorByMap(): Map<string, string> {
+export function useColorByMap(): Map<string, string> {
   const entities = useExperimentStore((s) => s.entities)
   const colorBy = useVizConfigStore((s) => s.config.colorBy)
 
@@ -73,6 +76,15 @@ function useColorByMap(): Map<string, string> {
   }, [entities, colorBy])
 }
 
+function GlCapture() {
+  const { gl, scene, camera } = useThree()
+  const setGl = useCanvasRef((s) => s.setGl)
+  useEffect(() => { setGl(gl, scene, camera) }, [gl, scene, camera, setGl])
+  return null
+}
+
+const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
+
 function SceneEntities() {
   const { entities, selectedEntityId, selectEntity } = useExperimentStore(
     useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
@@ -86,9 +98,16 @@ function SceneEntities() {
     }
   }, [flyTo])
 
+  // Split entities into instanced vs individual
+  const individual = useMemo(() =>
+    Array.from(entities.values()).filter((e) => !INSTANCED_TYPES.has(e.type)),
+    [entities]
+  )
+
   return (
     <>
-      {Array.from(entities.values()).map((entity: AnyEntity) =>
+      <InstancedEntities colorMap={colorMap} />
+      {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
           <group key={entity.id}>
             <EntityRenderer
@@ -118,6 +137,7 @@ function SceneContent() {
 
   return (
     <>
+      <GlCapture />
       <CameraController />
       <SceneEntities />
       <EntityLinks />
@@ -133,13 +153,16 @@ function SceneContent() {
 export function Scene() {
   const arena = useExperimentStore((s) => s.arena)
   const envPreset = useSceneSettingsStore((s) => s.envPreset)
+  const shadows = useSettingsStore((s) => s.shadows)
+  const pixelRatio = useSettingsStore((s) => s.pixelRatio)
 
   return (
     <Canvas
       camera={{ position: [0, -12, 10], up: [0, 0, 1], fov: 50 }}
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
-      shadows
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0 }}
+      shadows={shadows}
+      dpr={pixelRatio}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, preserveDrawingBuffer: true }}
     >
       <EnvironmentPreset preset={envPreset} arena={arena} />
 

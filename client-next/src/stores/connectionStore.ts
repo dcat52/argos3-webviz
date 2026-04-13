@@ -3,6 +3,8 @@ import type { ClientCommand, Vec3, Quaternion } from '../types/protocol'
 import { WebvizConnection, type ConnectionStatus } from '../protocol/connection'
 import { useExperimentStore } from './experimentStore'
 import { useLogStore } from './logStore'
+import { useRecordingStore } from './recordingStore'
+import { useSettingsStore } from './settingsStore'
 
 interface ConnectionState {
   status: ConnectionStatus
@@ -27,7 +29,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
 
   connect: (url?: string) => {
     get().connection?.disconnect()
-    const target = url ?? get().url ?? `ws://${window.location.hostname}:3000`
+    const target = url ?? useSettingsStore.getState().wsUrl ?? get().url
     set({ url: target })
 
     const conn = new WebvizConnection({
@@ -41,6 +43,7 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       switch (msg.type) {
         case 'broadcast':
           useExperimentStore.getState().applyBroadcast(msg)
+          useRecordingStore.getState().captureFrame(msg)
           break
         case 'log':
           useLogStore.getState().addMessages(msg.messages)
