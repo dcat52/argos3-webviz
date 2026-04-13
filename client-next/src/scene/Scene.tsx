@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
-import { OrbitControls, ContactShadows, Line } from '@react-three/drei'
+import { OrbitControls, Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
 import * as THREE from 'three'
 import { useShallow } from 'zustand/shallow'
@@ -100,8 +100,6 @@ export function Scene() {
       />
       <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
       <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
-
-      <ContactShadows position={[0, 0, -0.002]} scale={30} blur={2.5} far={4} color="#334" />
 
       <OrbitControls target={target} enableDamping dampingFactor={0.08} maxPolarAngle={Math.PI / 2.05} minDistance={0.5} maxDistance={50} />
 

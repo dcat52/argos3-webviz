@@ -36,17 +36,16 @@ export function KheperaIV({ entity, selected, onClick }: EntityRendererProps) {
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
           color={selected ? '#5577aa' : '#2a3a4a'}
-          metalness={0.4}
-          roughness={0.35}
-          clearcoat={0.8}
-          clearcoatRoughness={0.15}
+          metalness={0.05}
+          roughness={0.8}
+          clearcoat={0}
         />
       </mesh>
 
       {/* Top cap accent */}
       <mesh position={[0, 0, 0.027]} rotation={[0, 0, 0]}>
         <circleGeometry args={[0.05, 24]} />
-        <meshPhysicalMaterial color="#334455" metalness={0.5} roughness={0.3} />
+        <meshPhysicalMaterial color="#334455" metalness={0.05} roughness={0.8} />
       </mesh>
 
       {/* LEDs — emissive for bloom */}

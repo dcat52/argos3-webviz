@@ -17,7 +17,7 @@ if (!currentScene) {
 
 const PORT = 3000
 const BROADCAST_HZ = 10
-const wss = new WebSocketServer({ port: PORT })
+const wss = new WebSocketServer({ port: PORT, host: '0.0.0.0' })
 
 let state = 'EXPERIMENT_INITIALIZED'
 let step = 0

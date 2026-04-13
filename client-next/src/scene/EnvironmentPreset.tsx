@@ -16,7 +16,7 @@ function GridEnv({ arena }: { arena: ArenaInfo | null }) {
   return (
     <>
       <color attach="background" args={['#f0f0f0']} />
-      <fog attach="fog" args={['#f0f0f0', 20, 50]} />
+      <fog attach="fog" args={['#f0f0f0', 50, 150]} />
       <Grid
         args={[arena.size.x, arena.size.y]}
         rotation={[Math.PI / 2, 0, 0]}
@@ -88,7 +88,7 @@ function MountainEnv({ arena }: { arena: ArenaInfo | null }) {
       // Mountains rise at edges, flat in center for arena
       const flatRadius = arena ? Math.max(arena.size.x, arena.size.y) * 0.6 : 10
       const t = Math.max(0, (dist - flatRadius) / 40)
-      const height = t * t * 8 * (
+      const height = t * t * 1.5 * (
         Math.sin(x * 0.05) * Math.cos(y * 0.07) +
         Math.sin(x * 0.12 + 1) * 0.5 +
         Math.cos(y * 0.09 + 2) * 0.7
@@ -101,9 +101,8 @@ function MountainEnv({ arena }: { arena: ArenaInfo | null }) {
 
   return (
     <>
-      <color attach="background" args={['#ffeedd']} />
+      <color attach="background" args={['#eeddcc']} />
       <fog attach="fog" args={['#eeddcc', 40, 120]} />
-      <Environment preset="sunset" background />
       {/* Arena ground */}
       {arena && (
         <mesh rotation={[0, 0, 0]} position={[arena.center.x, arena.center.y, -0.002]}>

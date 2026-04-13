@@ -74,7 +74,7 @@ export function Toolbar() {
           <SelectContent>
             <SelectItem value="grid" className="text-xs">🔲 Grid</SelectItem>
             <SelectItem value="grass" className="text-xs">🌿 Grass</SelectItem>
-            <SelectItem value="mountain" className="text-xs">⛰️ Mountain</SelectItem>
+            <SelectItem value="mountain" className="text-xs">🏜️ Desert</SelectItem>
           </SelectContent>
         </Select>
         {availableScenes && (
