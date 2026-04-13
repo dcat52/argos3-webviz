@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2 } from 'lucide-react'
+import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PerspectiveSelector } from './PerspectiveSelector'
 import { SettingsPanel } from './SettingsPanel'
 import { useCanvasRef } from '@/stores/canvasRefStore'
+import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -55,6 +56,10 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const videoState = useVideoRecordingStore((s) => s.state)
+  const videoDuration = useVideoRecordingStore((s) => s.duration)
+  const startVideo = useVideoRecordingStore((s) => s.startVideoRecording)
+  const stopVideo = useVideoRecordingStore((s) => s.stopVideoRecording)
 
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
@@ -102,6 +107,14 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <Separator orientation="vertical" className="h-5" />
         <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
         <ToolbarButton icon={Camera} label="Screenshot" onClick={takeScreenshot} />
+        {videoState === 'recording' ? (
+          <>
+            <ToolbarButton icon={VideoOff} label="Stop Recording" active onClick={stopVideo} />
+            <span className="text-[10px] font-mono text-red-500">{videoDuration}s</span>
+          </>
+        ) : (
+          <ToolbarButton icon={Video} label="Record Video" onClick={startVideo} />
+        )}
         <ToolbarButton icon={isFullscreen ? Minimize2 : Maximize2} label="Fullscreen" onClick={toggleFullscreen} />
         <ToolbarButton icon={Settings} label="Settings" onClick={() => setSettingsOpen(true)} />
         <div className="ml-auto flex items-center gap-2">
