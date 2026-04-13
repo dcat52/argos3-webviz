@@ -666,9 +666,6 @@ namespace argos {
     /* Number of step from the simulator */
     cStateJson["steps"] = m_cSpace.GetSimulationClock();
 
-    /* Type of message */
-    cStateJson["type"] = "broadcast";
-
     /* Send to webserver to broadcast */
     m_cWebServer->Broadcast(cStateJson);
   }
