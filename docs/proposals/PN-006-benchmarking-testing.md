@@ -4,7 +4,7 @@ Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
 GitHub Issue: #6
 
-## Status: 📋 INVESTIGATION
+## Status: 🟡 DESIGN
 <!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -19,10 +19,11 @@ measures performance, and catches regressions — covering both the C++ plugin
 - Client-next UI functional tests (controls, recording, panels)
 - Client-next rendering performance benchmarks (FPS at various entity counts)
 - Protocol benchmarks (bandwidth, latency, message size)
-- Recording benchmarks (file size, compression ratio, load time)
+- Recording benchmarks (file size, load time — current format only)
 - Mock server test harness for reproducible client testing
+- Seeded RNG in mock server for deterministic, reproducible benchmarks
 - C++ plugin unit tests (extending existing GTest suite)
-- CI-friendly test runner
+- CI-friendly test runner (GitHub Actions, migrating from Travis CI)
 
 **Out of scope:**
 - ❌ ARGoS simulation correctness (that's ARGoS's job)
@@ -88,8 +89,9 @@ Framework: **Vitest** (native Vite integration, fast, TypeScript-first).
 | `connectionStore.test.ts` | Connection state machine (disconnected → connecting → connected), auto-reconnect |
 | `recordingStore.test.ts` | Record frames, export JSON, import JSON, replay frame sequencing |
 | `protocol.test.ts` | Message parsing, validation, malformed message handling |
-| `vizEngine.test.ts` | Field discovery, type classification, computed field derivation |
-| `computedFields.test.ts` | `_speed`, `_led_state`, `_heading` correctness with known inputs |
+| `vizEngine.test.ts` | Field discovery, type classification |
+
+> **Note:** Tests for PN-005 features (computed fields, WEBVIZ_EXPOSE) will be added when PN-005 is implemented.
 
 ### B. UI Integration Tests
 
@@ -97,16 +99,23 @@ Framework: **Playwright** (headless browser, real DOM, real WebSocket).
 
 Test flow: start mock server → launch client in headless Chrome → interact → assert.
 
+**Core tests** (required for Done When):
+
 | Test | Steps | Assertion |
 |---|---|---|
 | **Play/Pause** | Connect → click Play → wait 1s → click Pause | Step counter increases then stops |
 | **Step** | Connect → click Step 3 times | Step counter = 3 |
 | **Reset** | Play → wait → Reset | Step counter = 0, entities at initial positions |
 | **Fast Forward** | Play → click FF → wait | Step counter advances faster than real-time |
-| **Entity Selection** | Click entity in sidebar | Inspector shows entity data, selection ring visible |
-| **Keyboard Shortcuts** | Press Space, Right, R, F | Same as button equivalents |
 | **Recording Start/Stop** | Click Record → wait → Stop → check download | `.json` file downloaded with frames |
 | **Recording Replay** | Load recording → Play → scrub | Entities move, scrubber updates |
+
+**Extended tests** (stretch goals):
+
+| Test | Steps | Assertion |
+|---|---|---|
+| **Entity Selection** | Click entity in sidebar | Inspector shows entity data, selection ring visible |
+| **Keyboard Shortcuts** | Press Space, Right, R, F | Same as button equivalents |
 | **Settings Panel** | Open settings → change WS URL | Connection attempts new URL |
 | **Camera Presets** | Click Isometric, Top-down, Side, Follow | Camera position changes (verify via canvas state) |
 | **Environment Switch** | Select Grid, Grass, Desert | Scene background changes |
@@ -155,12 +164,11 @@ Measurement: WebSocket interceptor in Playwright, or instrumented mock server.
 
 | Metric | Scenario | Target |
 |---|---|---|
-| File size (uncompressed) | 1000 steps × 20 entities | Baseline |
-| File size (gzip) | Same | <20% of uncompressed |
-| File size (delta + gzip) | Same | <10% of uncompressed |
+| File size (uncompressed JSON) | 1000 steps × 20 entities | Baseline |
 | Load time (browser) | 10MB file | <2s |
-| Load time (browser) | 100MB file | <10s |
 | Export time | 1000 frames from recordingStore | <1s |
+
+> **Note:** Compression benchmarks (gzip, delta+gzip) will be added with PN-003.
 
 Measurement: mock server generates known data, client records, measure output.
 
@@ -197,8 +205,8 @@ Add to existing GTest suite:
 |---|---|
 | `delta_encoding.cpp` | `ComputeDelta()` correctness — unchanged fields omitted, changed fields present |
 | `recorder_output.cpp` | `.argosrec` file format — header line valid JSON, schema line has all entities, delta lines have only changes |
-| `entity_serialization.cpp` | Each entity type serializes all required fields |
-| `webviz_expose.cpp` | `WEBVIZ_EXPOSE` registry stores and retrieves fields correctly |
+
+> **Note:** `entity_serialization.cpp` and `webviz_expose.cpp` tests depend on PN-005 and will be added when that proposal is implemented.
 
 ### F. CI Integration
 
@@ -237,17 +245,19 @@ jobs:
 | `client-next/benchmark/` | Does not exist | Create — FPS, bandwidth, recording benchmarks |
 | `client-next/src/mock/server.ts` | 6 scenes, manual start | Add test harness, new scenes |
 | `client-next/src/mock/scenes.ts` | 6 scenes | Add stress_500, delta_*, recording_1k, malformed |
-| `client-next/src/scene/FPSCounter.tsx` | Displays FPS in UI | Also expose to `window.__fpsHistory` for benchmarks |
-| `src/tests/modules/` | 5 utility tests | Add delta, recorder, serialization, expose tests |
-| `.github/workflows/test.yml` | Does not exist | Create — CI pipeline |
+| `client-next/src/scene/FPSCounter.tsx` | Displays FPS in UI (1-second bucket, no history) | Expose `window.__fpsHistory` array for benchmark collection |
+| `client-next/src/mock/scenes.ts` | 6 scenes, non-deterministic | Add stress_500, delta_*, recording_1k, malformed scenes; add seeded RNG |
+| `client-next/src/mock/server.ts` | 6 scenes, manual start | Add test harness, new scenes |
+| `src/tests/modules/` | 5 utility tests | Add delta encoding and recorder output tests |
+| `.github/workflows/test.yml` | Does not exist | Create — CI pipeline (replaces `.travis.yml`) |
 
 ## Assumptions
 
-- [ ] Playwright can intercept WebSocket messages for bandwidth measurement
-- [ ] Headless Chrome FPS measurement via `requestAnimationFrame` timing is reliable
-- [ ] Mock server is deterministic enough for reproducible benchmarks (seeded RNG)
-- [ ] GTest is sufficient for C++ delta/recorder tests (no need for integration with ARGoS simulator)
-- [ ] CI runners have Node.js and Chrome available
+- [x] Playwright can intercept WebSocket messages for bandwidth measurement — confirmed via `page.on('websocket')` API
+- [ ] Headless Chrome FPS measurement via `requestAnimationFrame` timing is reliable — partially valid; headless Chrome throttles rAF differently; FPSCounter needs `__fpsHistory` exposure (added to scope)
+- [ ] Mock server is deterministic enough for reproducible benchmarks — currently invalid (`Math.random()` everywhere); seeded RNG added to scope
+- [x] GTest is sufficient for C++ delta/recorder tests (no need for integration with ARGoS simulator)
+- [x] CI runners have Node.js and Chrome available — confirmed for GitHub Actions ubuntu-latest
 
 ## Dependencies
 
@@ -255,37 +265,49 @@ jobs:
 - **Enhanced by**: All other proposals (each adds testable surface area)
 - **Blocks**: PN-002 (needs baseline measurements before optimization)
 
-## Open Questions
+## Open Questions (Resolved)
 
-- Should benchmarks run on every PR, or only on a schedule (nightly)?
-- What's the regression threshold — 10% or 20% FPS drop before failing?
-- Should we benchmark on a specific hardware profile, or just track relative changes?
-- Is Playwright overkill for UI tests, or would Vitest + happy-dom suffice for most?
+- **Benchmarks on every PR or nightly?** → Tests on every push; FPS benchmarks nightly. FPS numbers are too variable on CI runners for per-PR gating.
+- **Regression threshold?** → Don't gate CI on FPS. Track trends in `docs/BENCHMARKS.md`. Gate on test pass/fail only.
+- **Specific hardware profile?** → No. Track relative changes. Document hardware in benchmark output.
+- **Playwright vs Vitest+happy-dom?** → Playwright for integration tests (WebSocket + canvas require real browser). Vitest for unit tests (stores are plain functions).
 
 ## Done When
 
 - [ ] `npm test` runs unit tests via Vitest, all pass
-- [ ] `npm run test:integration` runs Playwright UI tests against mock server, all pass
+- [ ] `npm run test:integration` runs 6 core Playwright UI tests against mock server, all pass
 - [ ] `npm run benchmark` reports FPS (p50/p95/min) for all scenes
 - [ ] `npm run benchmark` reports bandwidth per frame for full and delta modes
-- [ ] `npm run benchmark` reports recording file sizes (uncompressed, gzip, delta+gzip)
+- [ ] `npm run benchmark` reports recording file sizes (current uncompressed format)
 - [ ] Play/pause/step/reset/ff verified by automated tests
 - [ ] Recording start/stop/replay verified by automated tests
 - [ ] C++ GTest suite includes delta encoding and recorder output tests
-- [ ] CI pipeline runs all tests on push
-- [ ] Baseline benchmark numbers documented
+- [ ] CI pipeline (GitHub Actions) runs all tests on push to `client-next`
+- [ ] Baseline benchmark numbers documented in `docs/BENCHMARKS.md`
+- [ ] Mock server uses seeded RNG for reproducible benchmarks
 
 ## Effort Estimate
 
 | Component | Time |
 |---|---|
-| Vitest setup + 6 unit test suites | 2 hours |
-| Playwright setup + 14 integration tests | 3 hours |
+| Vitest setup + 5 unit test suites | 2 hours |
+| Playwright setup + 6 core integration tests | 3 hours |
+| Extended integration tests (8, stretch) | 3 hours |
+| Mock server seeded RNG + test harness | 1.5 hours |
+| FPSCounter `__fpsHistory` exposure | 15 min |
 | FPS benchmark script + new scenes | 1.5 hours |
 | Protocol bandwidth benchmark | 1 hour |
-| Recording size benchmark | 45 min |
-| Mock server test harness | 1 hour |
-| C++ GTest extensions (4 test files) | 1.5 hours |
-| CI workflow | 30 min |
-| Documentation | 30 min |
-| **Total** | **~12 hours** |
+| Recording size benchmark | 30 min |
+| C++ GTest extensions (2 test files) | 45 min |
+| CI workflow (GitHub Actions, replacing Travis) | 45 min |
+| Documentation (`docs/BENCHMARKS.md`) | 30 min |
+| **Total (core)** | **~12 hours** |
+| **Total (with extended tests)** | **~15 hours** |
+
+## Changelog
+
+| Date | Change | Phase |
+|------|--------|-------|
+| 2026-04-13 | Initial draft | 📋 INVESTIGATION |
+| 2026-04-13 | Post-investigation critique: removed PN-005 dependencies (computedFields.test.ts, webviz_expose.cpp, entity_serialization.cpp), scoped recording benchmarks to current format only, added seeded RNG to scope, added FPSCounter __fpsHistory exposure, split Playwright tests into core/extended, resolved open questions, updated effort estimate to 12-15h, validated assumptions | 🔍 CRITIQUE |
+| 2026-04-13 | Advanced to DESIGN | 🟡 DESIGN |
