@@ -4,7 +4,7 @@ Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
 GitHub Issue: #6
 
-## Status: 🟡 DESIGN
+## Status: 🔵 IMPLEMENTATION
 <!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -68,6 +68,12 @@ Client-next side:
 - [x] Documentation — benchmark results, test guide
 
 ## Design
+
+### Design Doc
+
+`docs/designs/PN-006-benchmarking-testing.md` — detailed implementation spec
+with merge order, code snippets, and key decisions.
+
 
 ### Test Categories
 
@@ -311,3 +317,5 @@ jobs:
 | 2026-04-13 | Initial draft | 📋 INVESTIGATION |
 | 2026-04-13 | Post-investigation critique: removed PN-005 dependencies (computedFields.test.ts, webviz_expose.cpp, entity_serialization.cpp), scoped recording benchmarks to current format only, added seeded RNG to scope, added FPSCounter __fpsHistory exposure, split Playwright tests into core/extended, resolved open questions, updated effort estimate to 12-15h, validated assumptions | 🔍 CRITIQUE |
 | 2026-04-13 | Advanced to DESIGN | 🟡 DESIGN |
+| 2026-04-13 | Design doc written: 6 MOs, seeded RNG, Vitest+Playwright, FPS benchmarks, CI pipeline. Self-critique passed. | 🟡 DESIGN |
+| 2026-04-13 | Post-design self-critique passed (no blockers). Advanced to IMPLEMENTATION. | 🔍 CRITIQUE → 🔵 IMPLEMENTATION |

@@ -46,7 +46,7 @@ Critique phases are explicit gates — they prevent premature implementation and
 | PN-003 | [Seamless Record → Replay](PN-003-recorder-replay.md) | 📋 INVESTIGATION | ~4h | None | [#3](https://github.com/dcat52/argos3-webviz/issues/3) |
 | PN-004 | [Generic Data Visualization System](PN-004-viz-system.md) | 📋 INVESTIGATION | ~5.5h | None | [#4](https://github.com/dcat52/argos3-webviz/issues/4) |
 | PN-005 | [Dynamic Computed Fields & State Exposure](PN-005-computed-fields.md) | 📋 INVESTIGATION | ~9h | None | [#5](https://github.com/dcat52/argos3-webviz/issues/5) |
-| PN-006 | [Benchmarking & Testing Framework](PN-006-benchmarking-testing.md) | 🟡 DESIGN | ~12h | None | [#6](https://github.com/dcat52/argos3-webviz/issues/6) |
+| PN-006 | [Benchmarking & Testing Framework](PN-006-benchmarking-testing.md) | 🔵 IMPLEMENTATION | ~12h | None | [#6](https://github.com/dcat52/argos3-webviz/issues/6) |
 | PN-007 | [Leo Entity Renderer](PN-007-leo-renderer.md) | 📋 INVESTIGATION | ~20min | None | [#7](https://github.com/dcat52/argos3-webviz/issues/7) |
 
 ## Suggested Implementation Order
