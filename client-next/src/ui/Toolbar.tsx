@@ -21,8 +21,8 @@ const statusColors: Record<string, string> = {
   disconnected: 'bg-red-500',
 }
 
-function ToolbarButton({ icon: Icon, label, active, onClick }: {
-  icon: React.ElementType; label: string; active?: boolean; onClick: () => void
+function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
+  icon: React.ElementType; label: string; active?: boolean; onClick: () => void; testId?: string
 }) {
   return (
     <Tooltip>
@@ -32,6 +32,7 @@ function ToolbarButton({ icon: Icon, label, active, onClick }: {
           size="icon"
           className="h-7 w-7"
           onClick={onClick}
+          data-testid={testId}
         >
           <Icon className="h-3.5 w-3.5" />
         </Button>
@@ -93,15 +94,15 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
     <>
       <div className="flex items-center gap-1.5 h-10 px-3 border-b bg-card">
         <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
-        <span className="text-xs text-muted-foreground mr-1">{status}</span>
+        <span className="text-xs text-muted-foreground mr-1" data-testid="connection-status">{status}</span>
         <Separator orientation="vertical" className="h-5" />
-        <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} />
-        <ToolbarButton icon={Pause} label="Pause" onClick={pause} />
-        <ToolbarButton icon={SkipForward} label="Step" onClick={step} />
-        <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} />
-        <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} />
+        <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} testId="play-btn" />
+        <ToolbarButton icon={Pause} label="Pause" onClick={pause} testId="pause-btn" />
+        <ToolbarButton icon={SkipForward} label="Step" onClick={step} testId="step-btn" />
+        <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} testId="ff-btn" />
+        <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} testId="reset-btn" />
         <Separator orientation="vertical" className="h-5" />
-        <span className="text-xs font-mono text-muted-foreground">Step {steps}</span>
+        <span className="text-xs font-mono text-muted-foreground" data-testid="step-counter">{steps}</span>
         <Separator orientation="vertical" className="h-5" />
         <PerspectiveSelector />
         <Separator orientation="vertical" className="h-5" />
