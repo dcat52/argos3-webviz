@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "playwright test",
     "mock": "tsx src/mock/server.ts",
     "mock:empty": "tsx src/mock/server.ts empty",
     "mock:single": "tsx src/mock/server.ts single",
@@ -38,6 +39,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/vite": "^4.2.2",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
