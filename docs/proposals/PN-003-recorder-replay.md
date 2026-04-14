@@ -2,7 +2,7 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
-GitHub Issue: N/A <!-- #N once published -->
+GitHub Issue: #3
 
 ## Status: 📋 INVESTIGATION
 <!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
