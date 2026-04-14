@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -252,7 +253,7 @@ jobs:
 
 - **Requires**: None
 - **Enhanced by**: All other proposals (each adds testable surface area)
-- **Blocks**: 002-delta-protocol (needs baseline measurements before optimization)
+- **Blocks**: PN-002 (needs baseline measurements before optimization)
 
 ## Open Questions
 

@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -22,7 +23,7 @@ by 60-90% for large swarms where most robots are stationary on any given tick.
 
 **Out of scope:**
 - ❌ Binary encoding (MessagePack/CBOR) — separate proposal if JSON delta proves insufficient
-- ❌ Changes to the recorder file format (see 003-recorder-replay)
+- ❌ Changes to the recorder file format (see PN-003)
 - ❌ Per-field compression or quantization of position values
 - ❌ Benchmarking infrastructure — see note below
 
@@ -137,8 +138,8 @@ get full broadcasts (backwards compatible).
 
 ## Dependencies
 
-- **Requires**: 006-benchmarking-testing (for baseline measurements and regression testing)
-- **Enhanced by**: 001-client-next-default (delta becomes default when client-next ships)
+- **Requires**: PN-006 (for baseline measurements and regression testing)
+- **Enhanced by**: PN-001 (delta becomes default when client-next ships)
 - **Blocks**: None
 
 ## Open Questions

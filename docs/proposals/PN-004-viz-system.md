@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -173,7 +174,7 @@ not per-entity. The temporal chart is the natural visualization here.
 ```
 
 Export/import buttons in `VizConfigPanel`. Config can also be embedded in
-`.argosrec` headers (see 003-recorder-replay).
+`.argosrec` headers (see PN-003).
 
 ### `_viz_hints` Schema
 
@@ -242,7 +243,7 @@ New `TimeSeriesPanel` for aggregate metrics (like the foraging example's
 ## Dependencies
 
 - **Requires**: None
-- **Enhanced by**: 003-recorder-replay (viz config embedded in .argosrec header), 005-computed-fields (computed fields appear in presets)
+- **Enhanced by**: PN-003 (viz config embedded in .argosrec header), PN-005 (computed fields appear in presets)
 - **Blocks**: None
 
 ## Open Questions

@@ -29,6 +29,9 @@
 
 
 # ARGoS3-Webviz
+
+> **⚠️ Fork Notice:** This is a development fork of [NESTLab/argos3-webviz](https://github.com/NESTLab/argos3-webviz). The `client-next` branch contains experimental work (modern React client, proposals, new features). **Do not push to upstream.** Any upstream contributions are a manual process.
+
 A Web interface plugin for [ARGoS 3](https://www.argos-sim.info/).
 
 | All builds | Ubuntu 16.04  | Ubuntu 18.04  | Mac OSX |

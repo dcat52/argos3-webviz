@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -184,7 +185,7 @@ and route through `experimentStore.applyMessage()`.
 ## Dependencies
 
 - **Requires**: None (recorder already works standalone)
-- **Enhanced by**: 002-delta-protocol (better deltas = smaller files)
+- **Enhanced by**: PN-002 (better deltas = smaller files)
 - **Blocks**: None
 
 ## Open Questions

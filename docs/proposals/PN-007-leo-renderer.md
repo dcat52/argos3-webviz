@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -85,7 +86,7 @@ export function LeoRenderer({ entity, overrideColor }: EntityRendererProps) {
 ## Dependencies
 
 - **Requires**: None
-- **Enhanced by**: 005-computed-fields (Leo velocity fields once serializer is extended)
+- **Enhanced by**: PN-005 (Leo velocity fields once serializer is extended)
 - **Blocks**: None
 
 ## Done When

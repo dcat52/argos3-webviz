@@ -2,9 +2,10 @@
 
 Created: 2026-04-13
 Baseline Commit: `aa1ffd1` (`client-next`)
+GitHub Issue: N/A <!-- #N once published -->
 
-## Status: 📋 DRAFT
-<!-- 📋 DRAFT → 🟡 READY → 🔵 IN PROGRESS → ✅ COMPLETE → 🔴 ABANDONED -->
+## Status: 📋 INVESTIGATION
+<!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
 
@@ -356,7 +357,7 @@ fields, the generic class serializes them.
 ## Dependencies
 
 - **Requires**: None (Part 1 works standalone; Part 3 is independent)
-- **Enhanced by**: 004-viz-system (computed fields appear in viz config presets)
+- **Enhanced by**: PN-004 (computed fields appear in viz config presets)
 - **Blocks**: None
 
 ## Open Questions
