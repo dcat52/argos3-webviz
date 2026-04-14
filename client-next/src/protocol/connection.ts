@@ -1,4 +1,5 @@
 import type { ServerMessage, ClientCommand } from '../types/protocol'
+import { isServerMessage } from './guards'
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
@@ -109,10 +110,4 @@ export class WebvizConnection {
   private setStatus(status: ConnectionStatus): void {
     this.onStatusChange?.(status)
   }
-}
-
-function isServerMessage(data: unknown): data is ServerMessage {
-  if (typeof data !== 'object' || data === null) return false
-  const t = (data as Record<string, unknown>)['type']
-  return t === 'broadcast' || t === 'schema' || t === 'delta' || t === 'event' || t === 'log'
 }
