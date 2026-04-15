@@ -193,3 +193,18 @@ export type ClientCommand =
   | FastForwardCommand
   | MoveEntityCommand
   | CustomCommand
+
+// --- Draw Commands (from user_data._draw) ---
+
+export type DrawCommand =
+  | { shape: 'circle'; pos: [number, number, number]; radius: number; color: [number, number, number, number]; fill: boolean }
+  | { shape: 'cylinder'; pos: [number, number, number]; radius: number; height: number; color: [number, number, number, number] }
+  | { shape: 'ray'; start: [number, number, number]; end: [number, number, number]; color: [number, number, number, number]; width: number }
+  | { shape: 'text'; pos: [number, number, number]; text: string; color: [number, number, number, number] }
+
+export interface FloorColorGrid {
+  resolution: number
+  origin: [number, number]
+  size: [number, number]
+  colors: string // base64-encoded RGB bytes
+}

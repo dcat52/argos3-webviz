@@ -1,6 +1,21 @@
 import { create } from 'zustand'
-import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage } from '../types/protocol'
+import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid } from '../types/protocol'
 import { computeFields } from '../lib/computedFields'
+
+function extractDraw(userData: unknown): DrawCommand[] {
+  if (!userData || typeof userData !== 'object') return []
+  const ud = userData as Record<string, unknown>
+  if (!Array.isArray(ud._draw)) return []
+  return ud._draw.filter((c: unknown) => c && typeof c === 'object' && 'shape' in (c as object)) as DrawCommand[]
+}
+
+function extractFloor(userData: unknown): FloorColorGrid | null {
+  if (!userData || typeof userData !== 'object') return null
+  const ud = userData as Record<string, unknown>
+  const f = ud._floor as FloorColorGrid | undefined
+  if (!f || !f.resolution || !f.colors) return null
+  return f
+}
 
 interface ExperimentState_ {
   state: ExperimentState
@@ -10,6 +25,8 @@ interface ExperimentState_ {
   entities: Map<string, AnyEntity>
   prevEntities: Map<string, AnyEntity>
   computedFields: Map<string, Record<string, unknown>>
+  drawCommands: DrawCommand[]
+  floorData: FloorColorGrid | null
   userData: unknown
   selectedEntityId: string | null
   applyBroadcast: (msg: BroadcastMessage) => void
@@ -27,6 +44,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   entities: new Map(),
   prevEntities: new Map(),
   computedFields: new Map(),
+  drawCommands: [],
+  floorData: null,
   userData: undefined,
   selectedEntityId: null,
 
@@ -44,6 +63,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       entities: next,
       prevEntities: prev,
       computedFields: computeFields(next, prev, msg.arena),
+      drawCommands: extractDraw(msg.user_data),
+      floorData: extractFloor(msg.user_data),
       userData: msg.user_data,
     })
   },
@@ -62,6 +83,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       entities: next,
       prevEntities: prev,
       computedFields: computeFields(next, prev, msg.arena),
+      drawCommands: extractDraw(msg.user_data),
+      floorData: extractFloor(msg.user_data),
       userData: msg.user_data,
     })
   },
@@ -88,6 +111,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       entities: next,
       prevEntities: prev,
       computedFields: computeFields(next, prev, arena),
+      drawCommands: extractDraw(msg.user_data ?? get().userData),
+      floorData: extractFloor(msg.user_data ?? get().userData),
       userData: msg.user_data ?? get().userData,
     })
   },
