@@ -22,6 +22,7 @@
 #include <nlohmann/json.hpp>
 
 #include <fstream>
+#include <zlib.h>
 #include <string>
 #include <unordered_map>
 
@@ -54,6 +55,10 @@ namespace argos {
 
     std::string m_strOutputFile;
     std::ofstream m_cOutStream;
+
+    /** Gzip file handle (used when output ends with .gz) */
+    gzFile m_gzFile = nullptr;
+    bool m_bGzip = false;
 
     unsigned int m_unEveryNSteps;
     bool m_bAutoStart;

@@ -1,6 +1,6 @@
-import { useRef } from 'react'
+import { useRef, useCallback } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Circle, Square, Play, Pause, Download, Upload } from 'lucide-react'
+import { Circle, Square, Play, Pause, Download, Upload, FileUp } from 'lucide-react'
 import { useRecordingStore } from '@/stores/recordingStore'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -23,28 +23,53 @@ function Btn({ icon: Icon, label, onClick, variant, className, testId }: {
 }
 
 export function RecordingControls() {
-  const { state, totalFrames, frameIndex, speed, playing, startRecording, stopRecording, downloadRecording, loadRecording, startReplay, stopReplay, togglePlayPause, setSpeed, seekTo } =
+  const { state, totalFrames, frameIndex, speed, playing, isArgosrec, argosrecHeader, argosrecWarnings,
+    startRecording, stopRecording, downloadRecording, loadRecording, loadArgosrecFile,
+    startReplay, stopReplay, togglePlayPause, setSpeed, seekTo } =
     useRecordingStore(useShallow((s) => ({
       state: s.state, totalFrames: s.totalFrames, frameIndex: s.frameIndex, speed: s.speed, playing: s.playing,
+      isArgosrec: s.isArgosrec, argosrecHeader: s.argosrecHeader, argosrecWarnings: s.argosrecWarnings,
       startRecording: s.startRecording, stopRecording: s.stopRecording, downloadRecording: s.downloadRecording,
-      loadRecording: s.loadRecording, startReplay: s.startReplay, stopReplay: s.stopReplay,
+      loadRecording: s.loadRecording, loadArgosrecFile: s.loadArgosrecFile,
+      startReplay: s.startReplay, stopReplay: s.stopReplay,
       togglePlayPause: s.togglePlayPause, setSpeed: s.setSpeed, seekTo: s.seekTo,
     })))
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = useCallback((file: File) => {
+    if (file.name.endsWith('.argosrec') || file.name.endsWith('.argosrec.gz')) {
+      loadArgosrecFile(file)
+    } else {
+      file.text().then((json) => { loadRecording(json); startReplay() })
+    }
+  }, [loadArgosrecFile, loadRecording, startReplay])
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
-    if (!file) return
-    file.text().then((json) => { loadRecording(json); startReplay() })
+    if (file) handleFile(file)
   }
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files[0]
+    if (file) handleFile(file)
+  }, [handleFile])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+  }, [])
 
   if (state === 'idle' && totalFrames === 0) {
     return (
-      <div className="flex items-center gap-1 h-7 px-3 border-b bg-card/50">
+      <div
+        className="flex items-center gap-1 h-7 px-3 border-b bg-card/50"
+        onDrop={handleDrop}
+        onDragOver={handleDragOver}
+      >
         <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" testId="record-btn" />
         <Btn icon={Upload} label="Load Recording" onClick={() => fileRef.current?.click()} />
-        <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleLoad} />
-        <span className="text-[10px] text-muted-foreground ml-1">Record / Load</span>
+        <input ref={fileRef} type="file" accept=".json,.argosrec,.gz" className="hidden" onChange={handleFileInput} />
+        <span className="text-[10px] text-muted-foreground ml-1">Record / Load / Drop .argosrec</span>
       </div>
     )
   }
@@ -60,7 +85,11 @@ export function RecordingControls() {
 
   // idle with frames or replaying
   return (
-    <div className="flex items-center gap-1.5 h-7 px-3 border-b bg-card/50">
+    <div
+      className="flex items-center gap-1.5 h-7 px-3 border-b bg-card/50"
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+    >
       {state === 'replaying' ? (
         <>
           <Btn icon={playing ? Pause : Play} label={playing ? 'Pause' : 'Play'} onClick={togglePlayPause} />
@@ -81,6 +110,14 @@ export function RecordingControls() {
         className="w-40"
       />
       <span className="text-[10px] font-mono text-muted-foreground">{frameIndex + 1}/{totalFrames}</span>
+      {isArgosrec && argosrecHeader?.created && (
+        <span className="text-[10px] text-muted-foreground truncate max-w-32" title={argosrecHeader.created}>
+          {new Date(argosrecHeader.created).toLocaleDateString()}
+        </span>
+      )}
+      {argosrecWarnings.length > 0 && (
+        <span className="text-[10px] text-yellow-500" title={argosrecWarnings.join('\n')}>⚠</span>
+      )}
       <Select value={String(speed)} onValueChange={(v) => setSpeed(Number(v))}>
         <SelectTrigger className="h-5 w-14 text-[10px]">
           <SelectValue />
@@ -91,9 +128,9 @@ export function RecordingControls() {
           ))}
         </SelectContent>
       </Select>
-      <Btn icon={Download} label="Download" onClick={downloadRecording} />
-      <Btn icon={Upload} label="Load" onClick={() => fileRef.current?.click()} />
-      <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleLoad} />
+      {!isArgosrec && <Btn icon={Download} label="Download" onClick={downloadRecording} />}
+      <Btn icon={FileUp} label="Load File" onClick={() => fileRef.current?.click()} />
+      <input ref={fileRef} type="file" accept=".json,.argosrec,.gz" className="hidden" onChange={handleFileInput} />
     </div>
   )
 }
