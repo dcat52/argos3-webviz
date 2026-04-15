@@ -41,14 +41,24 @@ test('reset returns to step 0', async ({ page }) => {
   expect(Number(steps)).toBe(0)
 })
 
-test('fast forward sets fast-forwarding state', async ({ page }) => {
-  await page.click('[data-testid="ff-btn"]')
+test('fast forward advances faster than play', async ({ page }) => {
+  // Measure normal play rate
+  await page.click('[data-testid="reset-btn"]')
   await page.waitForTimeout(500)
-  // The FF button should be active (has default variant)
-  const ffBtn = page.locator('[data-testid="ff-btn"]')
-  // Step counter should be advancing
-  const steps = Number(await page.locator('[data-testid="step-counter"]').textContent())
-  await page.waitForTimeout(1000)
-  const stepsAfter = Number(await page.locator('[data-testid="step-counter"]').textContent())
-  expect(stepsAfter).toBeGreaterThan(steps)
+  await page.click('[data-testid="play-btn"]')
+  await page.waitForTimeout(2000)
+  await page.click('[data-testid="pause-btn"]')
+  await page.waitForTimeout(200)
+  const normalSteps = Number(await page.locator('[data-testid="step-counter"]').textContent())
+
+  // Reset and measure FF rate
+  await page.click('[data-testid="reset-btn"]')
+  await page.waitForTimeout(500)
+  await page.click('[data-testid="ff-btn"]')
+  await page.waitForTimeout(2000)
+  await page.click('[data-testid="pause-btn"]')
+  await page.waitForTimeout(200)
+  const ffSteps = Number(await page.locator('[data-testid="step-counter"]').textContent())
+
+  expect(ffSteps).toBeGreaterThan(normalSteps * 2)
 })
