@@ -109,6 +109,39 @@ add_subdirectory(plugins)
 
 add_subdirectory(testing)
 
+#
+# Client-next web client (optional — requires Node.js/npm)
+#
+find_program(NPM_EXECUTABLE npm)
+
+if(NPM_EXECUTABLE)
+  set(CLIENT_NEXT_DIR "${CMAKE_SOURCE_DIR}/../client-next")
+  set(CLIENT_NEXT_DIST "${CLIENT_NEXT_DIR}/dist")
+  set(CLIENT_NEXT_STAMP "${CMAKE_BINARY_DIR}/client-next.stamp")
+
+  add_custom_command(
+    OUTPUT ${CLIENT_NEXT_STAMP}
+    COMMAND ${NPM_EXECUTABLE} ci --prefix ${CLIENT_NEXT_DIR}
+    COMMAND ${NPM_EXECUTABLE} run build --prefix ${CLIENT_NEXT_DIR}
+    COMMAND ${CMAKE_COMMAND} -E touch ${CLIENT_NEXT_STAMP}
+    WORKING_DIRECTORY ${CLIENT_NEXT_DIR}
+    COMMENT "Building client-next web client"
+    DEPENDS ${CLIENT_NEXT_DIR}/package.json ${CLIENT_NEXT_DIR}/package-lock.json
+  )
+
+  add_custom_target(client-next ALL DEPENDS ${CLIENT_NEXT_STAMP})
+
+  install(
+    DIRECTORY ${CLIENT_NEXT_DIST}/
+    DESTINATION share/argos3/plugins/simulator/visualizations/webviz/client
+  )
+
+  message(STATUS "client-next: npm found — web client will be built")
+else()
+  message(WARNING "npm not found — client-next will not be built. "
+                  "Install Node.js to build the web client.")
+endif()
+
 # Add Uninstall target
 add_custom_target(uninstall
   "${CMAKE_COMMAND}" -P "${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake"
