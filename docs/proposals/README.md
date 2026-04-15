@@ -41,7 +41,7 @@ Critique phases are explicit gates — they prevent premature implementation and
 
 | PN | Title | Status | Effort | Requires | GitHub Issue |
 |----|-------|--------|--------|----------|-------------|
-| PN-001 | [Client-Next CMake Build & Install](PN-001-client-next-default.md) | 📋 INVESTIGATION | ~2h | None | [#1](https://github.com/dcat52/argos3-webviz/issues/1) |
+| PN-001 | [Client-Next CMake Build & Install](PN-001-client-next-default.md) | 🔵 IMPLEMENTATION | ~2h | None | [#1](https://github.com/dcat52/argos3-webviz/issues/1) |
 | PN-002 | [Delta Encoding Protocol](PN-002-delta-protocol.md) | 📋 INVESTIGATION | ~2h | PN-006 | [#2](https://github.com/dcat52/argos3-webviz/issues/2) |
 | PN-003 | [Seamless Record → Replay](PN-003-recorder-replay.md) | 📋 INVESTIGATION | ~4h | None | [#3](https://github.com/dcat52/argos3-webviz/issues/3) |
 | PN-004 | [Generic Data Visualization System](PN-004-viz-system.md) | 📋 INVESTIGATION | ~5.5h | None | [#4](https://github.com/dcat52/argos3-webviz/issues/4) |
