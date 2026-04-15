@@ -12,17 +12,15 @@ test('play increases step counter', async ({ page }) => {
 
 test('pause stops step counter', async ({ page }) => {
   await page.click('[data-testid="play-btn"]')
-  // Wait for some steps to accumulate
   await expect(async () => {
     const s = Number(await page.locator('[data-testid="step-counter"]').textContent())
     expect(s).toBeGreaterThan(0)
   }).toPass({ timeout: 10000 })
 
   await page.click('[data-testid="pause-btn"]')
-  // Give server time to process pause before reading
   await page.waitForTimeout(500)
   const stepsA = Number(await page.locator('[data-testid="step-counter"]').textContent())
-  await page.waitForTimeout(2000)
+  await page.waitForTimeout(1500)
   const stepsB = Number(await page.locator('[data-testid="step-counter"]').textContent())
   expect(stepsB).toBe(stepsA)
 })
@@ -54,20 +52,18 @@ test('reset returns to step 0', async ({ page }) => {
 })
 
 test('fast forward advances faster than play', async ({ page }) => {
-  // Measure normal play rate
   await page.click('[data-testid="reset-btn"]')
   await expect(page.locator('[data-testid="step-counter"]')).toHaveText('0', { timeout: 5000 })
   await page.click('[data-testid="play-btn"]')
-  await page.waitForTimeout(3000)
+  await page.waitForTimeout(2000)
   await page.click('[data-testid="pause-btn"]')
   await page.waitForTimeout(500)
   const normalSteps = Number(await page.locator('[data-testid="step-counter"]').textContent())
 
-  // Reset and measure FF rate
   await page.click('[data-testid="reset-btn"]')
   await expect(page.locator('[data-testid="step-counter"]')).toHaveText('0', { timeout: 5000 })
   await page.click('[data-testid="ff-btn"]')
-  await page.waitForTimeout(3000)
+  await page.waitForTimeout(2000)
   await page.click('[data-testid="pause-btn"]')
   await page.waitForTimeout(500)
   const ffSteps = Number(await page.locator('[data-testid="step-counter"]').textContent())
