@@ -77,10 +77,10 @@ export function walls(arenaW: number, arenaH: number, thickness = 0.1, height = 
 
 // --- Motion helpers ---
 
-export function randomWalk(x: number, y: number, angle: number, speed: number, bounds: number, dt = 0.1): { x: number; y: number; angle: number } {
+export function randomWalk(x: number, y: number, angle: number, speed: number, bounds: number, dt = 0.1, rng: () => number = Math.random): { x: number; y: number; angle: number } {
   let nx = x + Math.cos(angle) * speed * dt
   let ny = y + Math.sin(angle) * speed * dt
-  let na = angle + (Math.random() - 0.5) * 0.3
+  let na = angle + (rng() - 0.5) * 0.3
 
   // Bounce off walls
   if (Math.abs(nx) > bounds) { na = Math.PI - na; nx = Math.sign(nx) * bounds }
@@ -95,12 +95,12 @@ export function circularMotion(cx: number, cy: number, radius: number, speed: nu
 
 // --- Ray generation ---
 
-function makeProximityRays(count: number, length: number, bodyAngle: number): string[] {
+function makeProximityRays(count: number, length: number, bodyAngle: number, rng: () => number = Math.random): string[] {
   const rays: string[] = []
   for (let i = 0; i < count; i++) {
     const a = (i / count) * Math.PI * 2
-    const hit = Math.random() > 0.7
-    const dist = hit ? Math.random() * length : length
+    const hit = rng() > 0.7
+    const dist = hit ? rng() * length : length
     rays.push(`${hit}:0,0,0.03:${(Math.cos(a) * dist).toFixed(4)},${(Math.sin(a) * dist).toFixed(4)},0.03`)
   }
   return rays

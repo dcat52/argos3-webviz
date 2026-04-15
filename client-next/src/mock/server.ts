@@ -39,9 +39,12 @@ function broadcast() {
   })
 }
 
+const FF_MULTIPLIER = 10
+
 function tick() {
   if (running) {
-    step++
+    const stepsPerTick = state === 'EXPERIMENT_FAST_FORWARDING' ? FF_MULTIPLIER : 1
+    step += stepsPerTick
     if (step >= (currentScene.maxSteps || Infinity)) {
       state = 'EXPERIMENT_DONE'
       running = false

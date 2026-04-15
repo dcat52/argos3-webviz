@@ -7,13 +7,13 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 
-function Btn({ icon: Icon, label, onClick, variant, className }: {
-  icon: React.ElementType; label: string; onClick: () => void; variant?: 'ghost' | 'default'; className?: string
+function Btn({ icon: Icon, label, onClick, variant, className, testId }: {
+  icon: React.ElementType; label: string; onClick: () => void; variant?: 'ghost' | 'default'; className?: string; testId?: string
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant={variant ?? 'ghost'} size="icon" className={`h-6 w-6 ${className ?? ''}`} onClick={onClick}>
+        <Button variant={variant ?? 'ghost'} size="icon" className={`h-6 w-6 ${className ?? ''}`} onClick={onClick} data-testid={testId}>
           <Icon className="h-3 w-3" />
         </Button>
       </TooltipTrigger>
@@ -41,7 +41,7 @@ export function RecordingControls() {
   if (state === 'idle' && totalFrames === 0) {
     return (
       <div className="flex items-center gap-1 h-7 px-3 border-b bg-card/50">
-        <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" />
+        <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" testId="record-btn" />
         <Btn icon={Upload} label="Load Recording" onClick={() => fileRef.current?.click()} />
         <input ref={fileRef} type="file" accept=".json" className="hidden" onChange={handleLoad} />
         <span className="text-[10px] text-muted-foreground ml-1">Record / Load</span>
@@ -52,8 +52,8 @@ export function RecordingControls() {
   if (state === 'recording') {
     return (
       <div className="flex items-center gap-1 h-7 px-3 border-b bg-red-500/10">
-        <Btn icon={Square} label="Stop Recording" onClick={stopRecording} className="text-red-500" />
-        <span className="text-[10px] text-red-400 font-mono ml-1">⏺ {totalFrames} frames</span>
+        <Btn icon={Square} label="Stop Recording" onClick={stopRecording} className="text-red-500" testId="stop-record-btn" />
+        <span className="text-[10px] text-red-400 font-mono ml-1" data-testid="frame-count">⏺ {totalFrames} frames</span>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export function RecordingControls() {
       ) : (
         <>
           <Btn icon={Play} label="Replay" onClick={startReplay} />
-          <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" />
+          <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" testId="record-btn" />
         </>
       )}
       <Slider
