@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage } from '../types/protocol'
+import { computeFields } from '../lib/computedFields'
 
 interface ExperimentState_ {
   state: ExperimentState
@@ -7,6 +8,8 @@ interface ExperimentState_ {
   timestamp: number
   arena: ArenaInfo | null
   entities: Map<string, AnyEntity>
+  prevEntities: Map<string, AnyEntity>
+  computedFields: Map<string, Record<string, unknown>>
   userData: unknown
   selectedEntityId: string | null
   applyBroadcast: (msg: BroadcastMessage) => void
@@ -22,10 +25,13 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   timestamp: 0,
   arena: null,
   entities: new Map(),
+  prevEntities: new Map(),
+  computedFields: new Map(),
   userData: undefined,
   selectedEntityId: null,
 
   applyBroadcast: (msg) => {
+    const prev = get().entities
     const next = new Map<string, AnyEntity>()
     for (const entity of msg.entities) {
       next.set(entity.id, entity)
@@ -36,11 +42,14 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       timestamp: msg.timestamp,
       arena: msg.arena,
       entities: next,
+      prevEntities: prev,
+      computedFields: computeFields(next, prev, msg.arena),
       userData: msg.user_data,
     })
   },
 
   applySchema: (msg) => {
+    const prev = get().entities
     const next = new Map<string, AnyEntity>()
     for (const entity of msg.entities) {
       next.set(entity.id, entity)
@@ -51,6 +60,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       timestamp: msg.timestamp ?? Date.now(),
       arena: msg.arena,
       entities: next,
+      prevEntities: prev,
+      computedFields: computeFields(next, prev, msg.arena),
       userData: msg.user_data,
     })
   },
@@ -62,20 +73,21 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
     for (const [id, changes] of Object.entries(msg.entities)) {
       const existing = next.get(id)
       if (existing) {
-        // Merge changes into existing entity
         next.set(id, { ...existing, ...changes } as AnyEntity)
       } else {
-        // New entity in delta — must have full data
         next.set(id, changes as AnyEntity)
       }
     }
 
+    const arena = msg.arena ?? get().arena
     set({
       state: msg.state ?? get().state,
       steps: msg.steps ?? get().steps,
       timestamp: msg.timestamp ?? Date.now(),
-      arena: msg.arena ?? get().arena,
+      arena,
       entities: next,
+      prevEntities: prev,
+      computedFields: computeFields(next, prev, arena),
       userData: msg.user_data ?? get().userData,
     })
   },

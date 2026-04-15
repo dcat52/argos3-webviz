@@ -173,6 +173,9 @@ namespace argos {
     /** Whether to use delta encoding for broadcasts */
     bool m_bDeltaMode = false;
 
+    /** Whether to include extended entity state (wheel speeds, battery, etc.) */
+    bool m_bExtendedState = false;
+
     /** Keyframe interval: send full schema every N steps in delta mode */
     UInt32 m_unKeyframeInterval = 100;
 
