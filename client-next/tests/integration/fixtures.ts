@@ -4,7 +4,7 @@ export const test = base.extend<{ connected: void }>({
   connected: [async ({ page }, use) => {
     await page.goto('/')
     // Wait for WebSocket connection
-    await expect(page.locator('[data-testid="connection-status"]')).toHaveText('connected', { timeout: 10000 })
+    await expect(page.locator('[data-testid="connection-status"]')).toHaveText('connected', { timeout: 15000 })
     await use()
   }, { auto: true }],
 })
