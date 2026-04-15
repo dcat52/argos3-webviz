@@ -48,6 +48,8 @@ namespace argos {
       t_tree, "delta", m_bDeltaMode, false);
     GetNodeAttributeOrDefault(
       t_tree, "keyframe_interval", m_unKeyframeInterval, UInt32(100));
+    GetNodeAttributeOrDefault(
+      t_tree, "extended_state", m_bExtendedState, false);
 
     /* Get options for ssl certificate from XML */
     GetNodeAttributeOrDefault(

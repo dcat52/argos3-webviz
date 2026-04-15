@@ -23,9 +23,11 @@ describe('discoverFields', () => {
     expect(fields.find(f => f.fieldName === 'visible')).toBeDefined()
   })
 
-  test('returns empty for entities without user_data', () => {
+  test('returns no server fields for entities without user_data', () => {
     const entities = new Map<string, AnyEntity>([['r0', makeEntity('r0')]])
-    expect(discoverFields(entities)).toEqual([])
+    const fields = discoverFields(entities)
+    // Only computed fields, no server-provided fields
+    expect(fields.every(f => f.computed)).toBe(true)
   })
 
   test('collects sample values', () => {
