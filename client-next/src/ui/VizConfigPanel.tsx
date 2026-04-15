@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { useShallow } from 'zustand/shallow'
 import { useVizConfigStore, type VizConfig } from '@/stores/vizConfigStore'
 import { Switch } from '@/components/ui/switch'
@@ -5,8 +6,10 @@ import { Label } from '@/components/ui/label'
 import { Slider } from '@/components/ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
-import { ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { ChevronRight, Download, Upload } from 'lucide-react'
 import type { FieldSchema } from '@/lib/vizEngine'
+import { vizPresets, getAvailablePresets } from '@/lib/vizPresets'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -37,9 +40,27 @@ function ColorInput({ value, onChange }: { value: string; onChange: (v: string) 
 }
 
 export function VizConfigPanel() {
-  const { fields, config, setConfig } = useVizConfigStore(
-    useShallow((s) => ({ fields: s.fields, config: s.config, setConfig: s.setConfig }))
+  const { fields, config, setConfig, loadPreset, exportConfig, importConfig } = useVizConfigStore(
+    useShallow((s) => ({ fields: s.fields, config: s.config, setConfig: s.setConfig, loadPreset: s.loadPreset, exportConfig: s.exportConfig, importConfig: s.importConfig }))
   )
+  const importRef = useRef<HTMLInputElement>(null)
+
+  const availablePresets = getAvailablePresets(fields.map(f => f.fieldName))
+
+  const handleExport = () => {
+    const json = exportConfig()
+    const blob = new Blob([json], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = 'vizconfig.json'
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) file.text().then(importConfig)
+  }
 
   const updateColorBy = (patch: Partial<NonNullable<VizConfig['colorBy']>>) =>
     setConfig({ colorBy: { enabled: false, field: '', scale: 'linear', colorA: '#0000ff', colorB: '#ff0000', ...config.colorBy, ...patch } })
@@ -50,6 +71,31 @@ export function VizConfigPanel() {
   return (
     <div className="p-3 space-y-1">
       <h3 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-2">Visualization</h3>
+
+      <Section title="Presets">
+        <Select onValueChange={(id) => {
+          const preset = vizPresets.find(p => p.id === id)
+          if (preset) loadPreset(preset.config)
+        }}>
+          <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Select preset" /></SelectTrigger>
+          <SelectContent>
+            {availablePresets.map((p) => (
+              <SelectItem key={p.id} value={p.id} className="text-xs">
+                {p.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={handleExport}>
+            <Download className="h-3 w-3 mr-1" /> Export
+          </Button>
+          <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => importRef.current?.click()}>
+            <Upload className="h-3 w-3 mr-1" /> Import
+          </Button>
+          <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
+        </div>
+      </Section>
 
       <Section title="Color By">
         <div className="flex items-center gap-2">

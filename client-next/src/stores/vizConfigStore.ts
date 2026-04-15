@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { FieldSchema } from '@/lib/vizEngine'
+import { vizPresets } from '@/lib/vizPresets'
 
 export interface VizConfig {
   colorBy: { enabled: boolean; field: string; scale: 'linear' | 'categorical'; colorA: string; colorB: string } | null
@@ -17,6 +18,9 @@ interface VizConfigStore {
   setFields: (fields: FieldSchema[]) => void
   setConfig: (patch: Partial<VizConfig>) => void
   applyHints: (hints: Record<string, unknown>) => void
+  loadPreset: (config: VizConfig) => void
+  exportConfig: () => string
+  importConfig: (json: string) => void
 }
 
 const defaultConfig: VizConfig = {
@@ -29,15 +33,32 @@ const defaultConfig: VizConfig = {
 
 export const useVizConfigStore = create<VizConfigStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       fields: [],
       config: defaultConfig,
       hintsApplied: false,
       setFields: (fields) => set({ fields }),
       setConfig: (patch) => set((s) => ({ config: { ...s.config, ...patch } })),
+      loadPreset: (config) => set({ config }),
+      exportConfig: () => {
+        const { config } = get()
+        return JSON.stringify({ version: 1, ...config }, null, 2)
+      },
+      importConfig: (json) => {
+        try {
+          const parsed = JSON.parse(json)
+          const { version, ...config } = parsed
+          set({ config: { ...defaultConfig, ...config } })
+        } catch { /* ignore invalid JSON */ }
+      },
       applyHints: (hints) =>
         set((s) => {
           if (s.hintsApplied) return s
+          // If preset specified, load it
+          if (hints.preset && typeof hints.preset === 'string') {
+            const preset = vizPresets.find(p => p.id === hints.preset)
+            if (preset) return { config: preset.config, hintsApplied: true }
+          }
           const patch: Partial<VizConfig> = {}
           if (hints.colorBy && typeof hints.colorBy === 'string')
             patch.colorBy = { enabled: true, field: hints.colorBy, scale: 'linear', colorA: '#0000ff', colorB: '#ff0000' }
