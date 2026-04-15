@@ -50,6 +50,8 @@ namespace argos {
       t_tree, "keyframe_interval", m_unKeyframeInterval, UInt32(100));
     GetNodeAttributeOrDefault(
       t_tree, "extended_state", m_bExtendedState, false);
+    GetNodeAttributeOrDefault(
+      t_tree, "real_time_factor", m_fRealTimeFactor, Real(1.0));
 
     /* Get options for ssl certificate from XML */
     GetNodeAttributeOrDefault(
@@ -218,15 +220,19 @@ namespace argos {
         m_cTimer.Stop();
 
         /* If the elapsed time is lower than the tick length, wait */
-        if (m_cTimer.Elapsed() < m_cSimulatorTickMillis) {
-          /* Sleep for the difference duration */
-          std::this_thread::sleep_for(
-            m_cSimulatorTickMillis - m_cTimer.Elapsed());
-        } else {
-          LOGERR << "[WARNING] Clock tick took " << m_cTimer
-                 << " milli-secs, more than the expected "
-                 << m_cSimulatorTickMillis.count() << " milli-secs. "
-                 << "Recovering in next cycle." << '\n';
+        if (!m_bFastForwarding && m_fRealTimeFactor > 0) {
+          auto cTargetMillis = std::chrono::milliseconds(
+            static_cast<long long>(m_cSimulatorTickMillis.count() / m_fRealTimeFactor));
+          if (m_cTimer.Elapsed() < cTargetMillis) {
+            /* Sleep for the difference duration */
+            std::this_thread::sleep_for(
+              cTargetMillis - m_cTimer.Elapsed());
+          } else {
+            LOGERR << "[WARNING] Clock tick took " << m_cTimer
+                   << " milli-secs, more than the expected "
+                   << cTargetMillis.count() << " milli-secs. "
+                   << "Recovering in next cycle." << '\n';
+          }
         }
 
         /* Restart Timer */

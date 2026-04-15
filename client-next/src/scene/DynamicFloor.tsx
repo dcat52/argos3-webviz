@@ -45,7 +45,7 @@ export function DynamicFloor({ floorData, arena }: { floorData: FloorColorGrid; 
   }, [floorData.colors, floorData.resolution])
 
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[arena.center.x, 0.001, arena.center.y]}>
+    <mesh position={[arena.center.x, arena.center.y, 0.001]}>
       <planeGeometry args={[arena.size.x, arena.size.y]} />
       <meshBasicMaterial map={texture} transparent opacity={0.8} depthWrite={false} />
     </mesh>
