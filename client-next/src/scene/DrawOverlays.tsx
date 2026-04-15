@@ -27,7 +27,7 @@ function CircleShape({ cmd }: { cmd: Extract<DrawCommand, { shape: 'circle' }> }
   }, [cmd.radius, cmd.fill])
 
   return (
-    <mesh geometry={geo} position={cmd.pos} rotation={[-Math.PI / 2, 0, 0]}>
+    <mesh geometry={geo} position={cmd.pos}>
       <meshBasicMaterial
         color={toHex(cmd.color)}
         opacity={cmd.color[3] / 255}

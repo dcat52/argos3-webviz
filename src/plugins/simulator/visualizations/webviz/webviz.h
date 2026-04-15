@@ -173,6 +173,9 @@ namespace argos {
     /** Whether to use delta encoding for broadcasts */
     bool m_bDeltaMode = false;
 
+    /** Speed multiplier: 1.0=real-time, 2.0=2x, 0=unlimited */
+    Real m_fRealTimeFactor = 1.0;
+
     /** Whether to include extended entity state (wheel speeds, battery, etc.) */
     bool m_bExtendedState = false;
 
