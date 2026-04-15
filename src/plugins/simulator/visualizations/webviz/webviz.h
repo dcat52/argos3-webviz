@@ -173,6 +173,12 @@ namespace argos {
     /** Whether to use delta encoding for broadcasts */
     bool m_bDeltaMode = false;
 
+    /** Keyframe interval: send full schema every N steps in delta mode */
+    UInt32 m_unKeyframeInterval = 100;
+
+    /** Steps since last keyframe */
+    UInt32 m_unStepsSinceKeyframe = 0;
+
     /** Previous entities JSON for delta computation */
     nlohmann::json m_cPrevEntities;
 
