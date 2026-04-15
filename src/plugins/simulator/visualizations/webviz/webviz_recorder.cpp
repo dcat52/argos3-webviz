@@ -105,10 +105,28 @@ namespace argos {
     }
 
     /* Open output file */
-    m_cOutStream.open(m_strOutputFile, std::ios::out | std::ios::trunc);
-    if (!m_cOutStream.is_open()) {
-      THROW_ARGOSEXCEPTION("Cannot open output file: " + m_strOutputFile);
+    m_bGzip = m_strOutputFile.size() > 3 &&
+              m_strOutputFile.substr(m_strOutputFile.size() - 3) == ".gz";
+
+    if (m_bGzip) {
+      m_gzFile = gzopen(m_strOutputFile.c_str(), "wb");
+      if (!m_gzFile) {
+        THROW_ARGOSEXCEPTION("Cannot open gzip output file: " + m_strOutputFile);
+      }
+    } else {
+      m_cOutStream.open(m_strOutputFile, std::ios::out | std::ios::trunc);
+      if (!m_cOutStream.is_open()) {
+        THROW_ARGOSEXCEPTION("Cannot open output file: " + m_strOutputFile);
+      }
     }
+
+    /* Write header */
+    nlohmann::json cHeader;
+    cHeader["type"] = "header";
+    cHeader["version"] = 2;
+    cHeader["every_n_steps"] = m_unEveryNSteps;
+    cHeader["delta"] = m_bDeltaMode;
+    WriteFrame(cHeader);
 
     LOG << "[Recorder] Output: " << m_strOutputFile
         << " every_n_steps=" << m_unEveryNSteps
@@ -186,7 +204,12 @@ namespace argos {
   /****************************************/
 
   void CWebvizRecorder::WriteFrame(const nlohmann::json& cFrame) {
-    m_cOutStream << cFrame.dump(-1) << '\n';
+    std::string line = cFrame.dump(-1) + '\n';
+    if (m_bGzip) {
+      gzwrite(m_gzFile, line.c_str(), line.size());
+    } else {
+      m_cOutStream << line;
+    }
   }
 
   /****************************************/
@@ -265,6 +288,7 @@ namespace argos {
   /****************************************/
 
   void CWebvizRecorder::Destroy() {
+    if (m_bGzip && m_gzFile) { gzclose(m_gzFile); m_gzFile = nullptr; }
     if (m_cOutStream.is_open()) m_cOutStream.close();
     if (m_pcUserFunctions) {
       m_pcUserFunctions->Destroy();
