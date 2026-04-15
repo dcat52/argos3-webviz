@@ -12,6 +12,7 @@ import { scenes, type Scene } from './scenes'
 
 const args = process.argv.slice(2)
 const deltaFlag = args.includes('--delta')
+const drawFlag = args.includes('--draw')
 const sceneName = args.find(a => !a.startsWith('--')) || 'swarm'
 
 let currentScene = scenes[sceneName]
@@ -73,9 +74,45 @@ function computeDelta(
   return delta
 }
 
+function generateDrawCommands(entities: unknown[]): unknown[] {
+  const cmds: unknown[] = []
+  for (const e of entities) {
+    const entity = e as Record<string, unknown>
+    const pos = entity.position as { x: number; y: number; z: number }
+    if (!pos) continue
+    // Comm range circle
+    cmds.push({
+      shape: 'circle', pos: [pos.x, pos.y, 0.01], radius: 1.5,
+      color: [100, 150, 255, 40], fill: true,
+    })
+  }
+  // Links between nearby entities
+  for (let i = 0; i < entities.length; i++) {
+    const a = (entities[i] as Record<string, unknown>).position as { x: number; y: number; z: number }
+    if (!a) continue
+    for (let j = i + 1; j < entities.length; j++) {
+      const b = (entities[j] as Record<string, unknown>).position as { x: number; y: number; z: number }
+      if (!b) continue
+      const dx = a.x - b.x, dy = a.y - b.y
+      if (dx * dx + dy * dy < 2.25) {
+        cmds.push({
+          shape: 'ray', start: [a.x, a.y, 0.02], end: [b.x, b.y, 0.02],
+          color: [200, 200, 200, 80], width: 1,
+        })
+      }
+    }
+  }
+  return cmds
+}
+
 function buildMessage(entities: unknown[]): string {
   const arena = currentScene.arena
-  const userData = { available_scenes: Object.keys(scenes), current_scene: Object.keys(scenes).find(k => scenes[k] === currentScene) }
+  const drawCmds = drawFlag ? generateDrawCommands(entities) : undefined
+  const userData: Record<string, unknown> = {
+    available_scenes: Object.keys(scenes),
+    current_scene: Object.keys(scenes).find(k => scenes[k] === currentScene),
+  }
+  if (drawCmds) userData._draw = drawCmds
 
   if (!deltaFlag) {
     return JSON.stringify({ type: 'broadcast', state, steps: step, timestamp: Date.now(), arena, entities, user_data: userData })

@@ -22,7 +22,8 @@
     "mock:stress": "tsx src/mock/server.ts stress",
     "mock:corridor": "tsx src/mock/server.ts corridor",
     "mock:delta": "tsx src/mock/server.ts swarm --delta",
-    "mock:delta:stress": "tsx src/mock/server.ts stress --delta"
+    "mock:delta:stress": "tsx src/mock/server.ts stress --delta",
+    "mock:draw": "tsx src/mock/server.ts swarm --draw"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

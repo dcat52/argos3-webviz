@@ -19,6 +19,8 @@ import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
 import { HeatmapOverlay } from './HeatmapOverlay'
 import { FloatingLabels } from './FloatingLabels'
+import { DrawOverlays } from './DrawOverlays'
+import { DynamicFloor } from './DynamicFloor'
 import { InstancedEntities } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
 import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
@@ -133,6 +135,8 @@ THREE.Object3D.DEFAULT_UP.set(0, 0, 1)
 
 function SceneContent() {
   const arena = useExperimentStore((s) => s.arena)
+  const drawCommands = useExperimentStore((s) => s.drawCommands)
+  const floorData = useExperimentStore((s) => s.floorData)
   useFieldDiscovery()
 
   return (
@@ -144,6 +148,8 @@ function SceneContent() {
       <TrailRenderer />
       <HeatmapOverlay />
       <FloatingLabels />
+      <DrawOverlays commands={drawCommands} />
+      {floorData && arena && <DynamicFloor floorData={floorData} arena={arena} />}
       {arena && <ArenaBounds arena={arena} />}
       <FPSCounter />
     </>
