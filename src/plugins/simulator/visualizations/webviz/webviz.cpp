@@ -46,6 +46,8 @@ namespace argos {
       t_tree, "ff_draw_frames_every", m_unDrawFrameEvery, UInt16(2));
     GetNodeAttributeOrDefault(
       t_tree, "delta", m_bDeltaMode, false);
+    GetNodeAttributeOrDefault(
+      t_tree, "keyframe_interval", m_unKeyframeInterval, UInt32(100));
 
     /* Get options for ssl certificate from XML */
     GetNodeAttributeOrDefault(
@@ -496,6 +498,7 @@ namespace argos {
 
     m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_INITIALIZED;
     m_bSchemaSent = false;  /* Re-send schema on next broadcast */
+    m_unStepsSinceKeyframe = 0;
 
     /* Change state and emit signals */
     m_cWebServer->EmitEvent("Experiment reset", m_eExperimentState);
@@ -580,13 +583,15 @@ namespace argos {
 
     /************* Delta encoding *************/
     if (m_bDeltaMode) {
-      if (!m_bSchemaSent) {
-        /* Send full schema first */
+      if (!m_bSchemaSent || m_unStepsSinceKeyframe >= m_unKeyframeInterval) {
+        /* Send full schema: first frame or keyframe interval */
         cStateJson["type"] = "schema";
         cStateJson["entities"] = cCurrentEntities;
         m_cPrevEntities = cCurrentEntities;
         m_bSchemaSent = true;
+        m_unStepsSinceKeyframe = 0;
       } else {
+        m_unStepsSinceKeyframe++;
         /* Compute delta */
         cStateJson["type"] = "delta";
         nlohmann::json cDelta = nlohmann::json::object();
