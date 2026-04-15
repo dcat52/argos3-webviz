@@ -4,7 +4,6 @@ on:
   push:
     branches: [client-next]
   pull_request:
-    branches: [client-next]
 
 jobs:
   client-unit:
