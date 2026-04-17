@@ -21,6 +21,7 @@ interface ExperimentState_ {
   state: ExperimentState
   steps: number
   timestamp: number
+  realTimeRatio: number
   arena: ArenaInfo | null
   entities: Map<string, AnyEntity>
   prevEntities: Map<string, AnyEntity>
@@ -40,6 +41,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   state: ExperimentState.EXPERIMENT_INITIALIZED,
   steps: 0,
   timestamp: 0,
+  realTimeRatio: 1.0,
   arena: null,
   entities: new Map(),
   prevEntities: new Map(),
@@ -59,6 +61,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       state: msg.state,
       steps: msg.steps,
       timestamp: msg.timestamp,
+      realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena: msg.arena,
       entities: next,
       prevEntities: prev,
@@ -79,6 +82,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       state: msg.state ?? get().state,
       steps: msg.steps ?? 0,
       timestamp: msg.timestamp ?? Date.now(),
+      realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena: msg.arena,
       entities: next,
       prevEntities: prev,
@@ -107,6 +111,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       state: msg.state ?? get().state,
       steps: msg.steps ?? get().steps,
       timestamp: msg.timestamp ?? Date.now(),
+      realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena,
       entities: next,
       prevEntities: prev,
