@@ -679,13 +679,6 @@ namespace argos {
     /* Number of step from the simulator */
     cStateJson["steps"] = m_cSpace.GetSimulationClock();
 
-    /* Real-time ratio: target_tick_ms / actual_elapsed_ms */
-    if (m_cTimer.Elapsed().count() > 0) {
-      cStateJson["real_time_ratio"] =
-        static_cast<double>(m_cSimulatorTickMillis.count()) /
-        m_cTimer.Elapsed().count();
-    }
-
     /* Type of message */
     cStateJson["type"] = "broadcast";
 

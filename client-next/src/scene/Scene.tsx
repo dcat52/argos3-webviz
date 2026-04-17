@@ -21,7 +21,6 @@ import { HeatmapOverlay } from './HeatmapOverlay'
 import { FloatingLabels } from './FloatingLabels'
 import { DrawOverlays } from './DrawOverlays'
 import { DynamicFloor } from './DynamicFloor'
-import { ScaleBarUpdater, ScaleBarOverlay } from './ScaleBar'
 import { InstancedEntities } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
 import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
@@ -153,7 +152,6 @@ function SceneContent() {
       {floorData && arena && <DynamicFloor floorData={floorData} arena={arena} />}
       {arena && <ArenaBounds arena={arena} />}
       <FPSCounter />
-      <ScaleBarUpdater />
     </>
   )
 }
@@ -165,7 +163,6 @@ export function Scene() {
   const pixelRatio = useSettingsStore((s) => s.pixelRatio)
 
   return (
-    <>
     <Canvas
       camera={{ position: [0, -12, 10], up: [0, 0, 1], fov: 50 }}
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
@@ -199,7 +196,5 @@ export function Scene() {
         <SMAA />
       </EffectComposer>
     </Canvas>
-    <ScaleBarOverlay />
-    </>
   )
 }

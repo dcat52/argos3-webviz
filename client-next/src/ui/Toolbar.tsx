@@ -1,10 +1,9 @@
 import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog } from 'lucide-react'
+import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
-import type { EnvPreset } from '../scene/EnvironmentPreset'
 import { ExperimentState } from '../types/protocol'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,16 +19,6 @@ const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
   connecting: 'bg-yellow-500',
   disconnected: 'bg-red-500',
-}
-
-function RealTimeRatioBadge() {
-  const ratio = useExperimentStore((s) => s.realTimeRatio)
-  const state = useExperimentStore((s) => s.state)
-  if (state !== ExperimentState.EXPERIMENT_PLAYING &&
-      state !== ExperimentState.EXPERIMENT_FAST_FORWARDING) return null
-  const display = ratio >= 10 ? `${Math.round(ratio)}×` : `${ratio.toFixed(1)}×`
-  const color = ratio > 1.05 ? 'text-blue-400' : ratio >= 0.95 ? 'text-green-400' : ratio >= 0.5 ? 'text-yellow-400' : 'text-red-400'
-  return <span className={`text-xs font-mono ${color}`} title="Real-time ratio">⏱{display}</span>
 }
 
 function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
@@ -65,8 +54,6 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const setEnvPreset = useSceneSettingsStore((s) => s.setEnvPreset)
   const showFps = useSceneSettingsStore((s) => s.showFps)
   const toggleFps = useSceneSettingsStore((s) => s.toggleFps)
-  const showFog = useSceneSettingsStore((s) => s.showFog)
-  const toggleFog = useSceneSettingsStore((s) => s.toggleFog)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -116,12 +103,10 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} testId="reset-btn" />
         <Separator orientation="vertical" className="h-5" />
         <span className="text-xs font-mono text-muted-foreground" data-testid="step-counter">{steps}</span>
-        <RealTimeRatioBadge />
         <Separator orientation="vertical" className="h-5" />
         <PerspectiveSelector />
         <Separator orientation="vertical" className="h-5" />
         <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
-        <ToolbarButton icon={CloudFog} label="Toggle Fog" active={showFog} onClick={toggleFog} />
         <ToolbarButton icon={Camera} label="Screenshot" onClick={takeScreenshot} />
         {videoState === 'recording' ? (
           <>
@@ -134,7 +119,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <ToolbarButton icon={isFullscreen ? Minimize2 : Maximize2} label="Fullscreen" onClick={toggleFullscreen} />
         <ToolbarButton icon={Settings} label="Settings" onClick={() => setSettingsOpen(true)} />
         <div className="ml-auto flex items-center gap-2">
-          <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as EnvPreset)}>
+          <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as 'grid' | 'grass' | 'mountain')}>
             <SelectTrigger className="h-7 w-28 text-xs">
               <SelectValue />
             </SelectTrigger>
@@ -142,8 +127,6 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
               <SelectItem value="grid" className="text-xs">🔲 Grid</SelectItem>
               <SelectItem value="grass" className="text-xs">🌿 Grass</SelectItem>
               <SelectItem value="mountain" className="text-xs">🏜️ Desert</SelectItem>
-              <SelectItem value="soccer" className="text-xs">⚽ Soccer</SelectItem>
-              <SelectItem value="football" className="text-xs">🏈 Football</SelectItem>
             </SelectContent>
           </Select>
           {availableScenes && (

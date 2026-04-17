@@ -6,8 +6,6 @@ interface SceneSettingsState {
   setEnvPreset: (p: EnvPreset) => void
   showFps: boolean
   toggleFps: () => void
-  showFog: boolean
-  toggleFog: () => void
 }
 
 export const useSceneSettingsStore = create<SceneSettingsState>((set) => ({
@@ -15,6 +13,4 @@ export const useSceneSettingsStore = create<SceneSettingsState>((set) => ({
   setEnvPreset: (envPreset) => set({ envPreset }),
   showFps: false,
   toggleFps: () => set((s) => ({ showFps: !s.showFps })),
-  showFog: false,
-  toggleFog: () => set((s) => ({ showFog: !s.showFog })),
 }))
