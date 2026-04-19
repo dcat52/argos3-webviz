@@ -225,8 +225,7 @@ namespace argos {
             static_cast<long long>(m_cSimulatorTickMillis.count() / m_fRealTimeFactor));
           if (m_cTimer.Elapsed() < cTargetMillis) {
             /* Sleep for the difference duration */
-            std::this_thread::sleep_for(
-              cTargetMillis - m_cTimer.Elapsed());
+            std::this_thread::sleep_for(cTargetMillis - m_cTimer.Elapsed());
           } else {
             LOGERR << "[WARNING] Clock tick took " << m_cTimer
                    << " milli-secs, more than the expected "
@@ -292,6 +291,15 @@ namespace argos {
           /* No steps defined */
           FastForwardExperiment();
         }
+
+      } else if (strCmd.compare("speed") == 0) {
+        try {
+          Real fFactor = c_json_command["factor"].get<Real>();
+          if (fFactor > 0 && fFactor <= 1000) {
+            m_fRealTimeFactor = fFactor;
+            LOG << "[INFO] Real-time factor set to " << fFactor << '\n';
+          }
+        } catch (const std::exception& _ignored) {}
 
       } else if (strCmd.compare("moveEntity") == 0) {
         try {
@@ -679,11 +687,16 @@ namespace argos {
     /* Number of step from the simulator */
     cStateJson["steps"] = m_cSpace.GetSimulationClock();
 
-    /* Real-time ratio: target_tick_ms / actual_elapsed_ms */
-    if (m_cTimer.Elapsed().count() > 0) {
-      cStateJson["real_time_ratio"] =
-        static_cast<double>(m_cSimulatorTickMillis.count()) /
-        m_cTimer.Elapsed().count();
+    /* Real-time ratio: how fast sim runs vs wall clock */
+    if (m_bFastForwarding) {
+      /* In FF mode, measure actual throughput */
+      if (m_cTimer.Elapsed().count() > 0) {
+        double fSimTimeMs = static_cast<double>(m_cSimulatorTickMillis.count()) * m_unDrawFrameEvery;
+        cStateJson["real_time_ratio"] = fSimTimeMs / m_cTimer.Elapsed().count();
+      }
+    } else {
+      /* In play mode, ratio equals the configured factor (sleep enforces it) */
+      cStateJson["real_time_ratio"] = static_cast<double>(m_fRealTimeFactor);
     }
 
     /* Type of message */

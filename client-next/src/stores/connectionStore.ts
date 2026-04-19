@@ -5,6 +5,7 @@ import { useExperimentStore } from './experimentStore'
 import { useLogStore } from './logStore'
 import { useRecordingStore } from './recordingStore'
 import { useSettingsStore } from './settingsStore'
+import { SPEED_INFINITY_THRESHOLD, SPEED_TRANSITION_DELAY_MS } from '@/lib/defaults'
 
 interface ConnectionState {
   status: ConnectionStatus
@@ -19,6 +20,7 @@ interface ConnectionState {
   reset: () => void
   terminate: () => void
   fastForward: (steps?: number) => void
+  playAtSpeed: (speed: number) => void
   moveEntity: (id: string, pos: Vec3, orient: Quaternion) => void
 }
 
@@ -70,6 +72,18 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   reset: () => get().send({ command: 'reset' }),
   terminate: () => get().send({ command: 'terminate' }),
   fastForward: (steps?) => get().send({ command: 'fastforward', ...(steps !== undefined && { steps }) }),
+  playAtSpeed: (speed: number) => {
+    const { send } = get()
+    send({ command: 'pause' })
+    setTimeout(() => {
+      if (speed >= SPEED_INFINITY_THRESHOLD) {
+        send({ command: 'fastforward', steps: SPEED_INFINITY_THRESHOLD })
+      } else {
+        send({ command: 'speed', factor: speed })
+        send({ command: 'play' })
+      }
+    }, SPEED_TRANSITION_DELAY_MS)
+  },
   moveEntity: (id, pos, orient) =>
     get().send({ command: 'moveEntity', entity_id: id, position: pos, orientation: orient }),
 }))

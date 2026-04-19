@@ -180,6 +180,11 @@ export interface MoveEntityCommand {
   orientation: Quaternion
 }
 
+export interface SpeedCommand {
+  command: 'speed'
+  factor: number
+}
+
 export interface CustomCommand {
   [key: string]: unknown
 }
@@ -192,6 +197,7 @@ export type ClientCommand =
   | TerminateCommand
   | FastForwardCommand
   | MoveEntityCommand
+  | SpeedCommand
   | CustomCommand
 
 // --- Draw Commands (from user_data._draw) ---

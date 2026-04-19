@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight, Download, Upload } from 'lucide-react'
 import type { FieldSchema } from '@/lib/vizEngine'
 import { vizPresets, getAvailablePresets } from '@/lib/vizPresets'
+import { VIZ_DEFAULTS } from '@/lib/defaults'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -63,14 +64,19 @@ export function VizConfigPanel() {
   }
 
   const updateColorBy = (patch: Partial<NonNullable<VizConfig['colorBy']>>) =>
-    setConfig({ colorBy: { enabled: false, field: '', scale: 'linear', colorA: '#0000ff', colorB: '#ff0000', ...config.colorBy, ...patch } })
+    setConfig({ colorBy: { enabled: false, field: '', scale: 'linear', colorA: VIZ_DEFAULTS.colorByColorA, colorB: VIZ_DEFAULTS.colorByColorB, ...config.colorBy, ...patch } })
 
   const updateLinks = (patch: Partial<NonNullable<VizConfig['links']>>) =>
-    setConfig({ links: { enabled: false, field: '', color: '#44aaff', opacity: 0.6, ...config.links, ...patch } })
+    setConfig({ links: { enabled: false, field: '', color: VIZ_DEFAULTS.linksColor, opacity: VIZ_DEFAULTS.linksOpacity, ...config.links, ...patch } })
 
   return (
     <div className="p-3 space-y-1">
-      <h3 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-2">Visualization</h3>
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger className="flex items-center gap-1 w-full text-xs font-semibold uppercase text-muted-foreground py-1 group mb-2">
+          <ChevronRight className="h-3 w-3 transition-transform group-data-[panel-open]:rotate-90" />
+          Visualization
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1">
 
       <Section title="Presets">
         <Select onValueChange={(id) => {
@@ -179,6 +185,8 @@ export function VizConfigPanel() {
           <ColorInput value={config.heatmap.colorB} onChange={(v) => setConfig({ heatmap: { ...config.heatmap, colorB: v } })} />
         </div>
       </Section>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog } from 'lucide-react'
+import { Play, Pause, SkipForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog, PanelTop } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -15,6 +15,8 @@ import { PerspectiveSelector } from './PerspectiveSelector'
 import { SettingsPanel } from './SettingsPanel'
 import { useCanvasRef } from '@/stores/canvasRefStore'
 import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
+import { usePanelStore } from '@/stores/panelStore'
+import { SPEED_OPTIONS } from '@/lib/defaults'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -53,9 +55,25 @@ function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
   )
 }
 
+function PanelsDropdown({ onClose }: { onClose: () => void }) {
+  const panels = usePanelStore((s) => s.panels)
+  const toggle = usePanelStore((s) => s.toggle)
+  const names: Record<string, string> = { 'experiment-data': 'Experiment Data', 'event-log': 'Event Log' }
+  return (
+    <div className="absolute top-full left-0 mt-1 z-50 bg-card border rounded-md shadow-lg p-1 min-w-[160px]" onMouseLeave={onClose}>
+      {Object.entries(panels).map(([id, p]) => (
+        <button key={id} onClick={() => toggle(id)} className="flex items-center gap-2 w-full text-left text-xs px-2 py-1 rounded hover:bg-accent">
+          <span className={p.open ? 'text-green-400' : 'text-muted-foreground'}>{p.open ? '☑' : '☐'}</span>
+          {names[id] ?? id}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElement | null> }) {
-  const { status, play, pause, step, fastForward, reset } = useConnectionStore(
-    useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset }))
+  const { status, play, pause, step, fastForward, reset, playAtSpeed } = useConnectionStore(
+    useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset, playAtSpeed: s.playAtSpeed }))
   )
   const { state, steps, userData } = useExperimentStore(
     useShallow((s) => ({ state: s.state, steps: s.steps, userData: s.userData }))
@@ -69,7 +87,9 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const toggleFog = useSceneSettingsStore((s) => s.toggleFog)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [panelsOpen, setPanelsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [speed, setSpeed] = useState(1)
   const videoState = useVideoRecordingStore((s) => s.state)
   const videoDuration = useVideoRecordingStore((s) => s.duration)
   const startVideo = useVideoRecordingStore((s) => s.startVideoRecording)
@@ -78,8 +98,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
 
-  const isPlaying = state === ExperimentState.EXPERIMENT_PLAYING
-  const isFF = state === ExperimentState.EXPERIMENT_FAST_FORWARDING
+  const isRunning = state === ExperimentState.EXPERIMENT_PLAYING || state === ExperimentState.EXPERIMENT_FAST_FORWARDING
   const label = state.replace('EXPERIMENT_', '').replace(/_/g, ' ')
 
   const canvasEl = useCanvasRef((s) => s.gl)
@@ -109,11 +128,25 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
         <span className="text-xs text-muted-foreground mr-1" data-testid="connection-status">{status}</span>
         <Separator orientation="vertical" className="h-5" />
-        <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} testId="play-btn" />
-        <ToolbarButton icon={Pause} label="Pause" onClick={pause} testId="pause-btn" />
+        <ToolbarButton icon={isRunning ? Pause : Play} label={isRunning ? 'Pause' : `Play (${speed}×)`} active={isRunning} onClick={() => {
+          if (isRunning) { pause() } else { playAtSpeed(speed) }
+        }} testId="play-btn" />
         <ToolbarButton icon={SkipForward} label="Step" onClick={step} testId="step-btn" />
-        <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} testId="ff-btn" />
         <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} testId="reset-btn" />
+        <Select value={String(speed)} onValueChange={(v) => {
+          const s = Number(v)
+          setSpeed(s)
+          if (isRunning) playAtSpeed(s)
+        }}>
+          <SelectTrigger className="h-7 w-16 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SPEED_OPTIONS.map((o) => (
+              <SelectItem key={o.value} value={String(o.value)} className="text-xs">{o.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Separator orientation="vertical" className="h-5" />
         <span className="text-xs font-mono text-muted-foreground" data-testid="step-counter">{steps}</span>
         <RealTimeRatioBadge />
@@ -122,6 +155,12 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <Separator orientation="vertical" className="h-5" />
         <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
         <ToolbarButton icon={CloudFog} label="Toggle Fog" active={showFog} onClick={toggleFog} />
+        <div className="relative">
+          <ToolbarButton icon={PanelTop} label="Panels" active={panelsOpen} onClick={() => setPanelsOpen(!panelsOpen)} />
+          {panelsOpen && (
+            <PanelsDropdown onClose={() => setPanelsOpen(false)} />
+          )}
+        </div>
         <ToolbarButton icon={Camera} label="Screenshot" onClick={takeScreenshot} />
         {videoState === 'recording' ? (
           <>

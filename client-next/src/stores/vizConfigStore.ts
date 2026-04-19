@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { FieldSchema } from '@/lib/vizEngine'
+import { VIZ_DEFAULTS } from '@/lib/defaults'
 import { vizPresets } from '@/lib/vizPresets'
 
 export interface VizConfig {
@@ -27,8 +28,8 @@ const defaultConfig: VizConfig = {
   colorBy: null,
   links: null,
   labels: [],
-  trails: { enabled: false, length: 50, opacity: 0.6 },
-  heatmap: { enabled: false, resolution: 64, decay: 0.98, colorA: '#000000', colorB: '#ff4400' },
+  trails: { enabled: false, length: VIZ_DEFAULTS.trailLength, opacity: VIZ_DEFAULTS.trailOpacity },
+  heatmap: { enabled: false, resolution: VIZ_DEFAULTS.heatmapResolution, decay: VIZ_DEFAULTS.heatmapDecay, colorA: VIZ_DEFAULTS.heatmapColorA, colorB: VIZ_DEFAULTS.heatmapColorB },
 }
 
 export const useVizConfigStore = create<VizConfigStore>()(
