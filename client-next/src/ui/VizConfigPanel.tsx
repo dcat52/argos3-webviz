@@ -15,7 +15,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <Collapsible>
       <CollapsibleTrigger className="flex items-center gap-1 w-full text-xs font-semibold uppercase text-muted-foreground py-1 group">
-        <ChevronRight className="h-3 w-3 transition-transform group-data-[state=open]:rotate-90" />
+        <ChevronRight className="h-3 w-3 transition-transform group-data-[panel-open]:rotate-90" />
         {title}
       </CollapsibleTrigger>
       <CollapsibleContent className="pl-4 space-y-2 pb-2">{children}</CollapsibleContent>
