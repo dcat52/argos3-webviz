@@ -71,8 +71,8 @@ function PanelsDropdown({ onClose }: { onClose: () => void }) {
 }
 
 export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElement | null> }) {
-  const { status, play, pause, step, fastForward, reset } = useConnectionStore(
-    useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset }))
+  const { status, play, pause, step, fastForward, reset, playAtSpeed } = useConnectionStore(
+    useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset, playAtSpeed: s.playAtSpeed }))
   )
   const { state, steps, userData } = useExperimentStore(
     useShallow((s) => ({ state: s.state, steps: s.steps, userData: s.userData }))
@@ -88,6 +88,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [panelsOpen, setPanelsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
+  const [speed, setSpeed] = useState(1)
   const videoState = useVideoRecordingStore((s) => s.state)
   const videoDuration = useVideoRecordingStore((s) => s.duration)
   const startVideo = useVideoRecordingStore((s) => s.startVideoRecording)
@@ -96,7 +97,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
 
-  const isPlaying = state === ExperimentState.EXPERIMENT_PLAYING
+  const isRunning = state === ExperimentState.EXPERIMENT_PLAYING || state === ExperimentState.EXPERIMENT_FAST_FORWARDING
   const label = state.replace('EXPERIMENT_', '').replace(/_/g, ' ')
 
   const canvasEl = useCanvasRef((s) => s.gl)
@@ -126,16 +127,21 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
         <span className="text-xs text-muted-foreground mr-1" data-testid="connection-status">{status}</span>
         <Separator orientation="vertical" className="h-5" />
-        <ToolbarButton icon={Play} label="Play (1×)" active={isPlaying} onClick={play} testId="play-btn" />
-        <ToolbarButton icon={Pause} label="Pause" onClick={pause} testId="pause-btn" />
+        <ToolbarButton icon={isRunning ? Pause : Play} label={isRunning ? 'Pause' : `Play (${speed}×)`} active={isRunning} onClick={() => {
+          if (isRunning) { pause() } else { playAtSpeed(speed) }
+        }} testId="play-btn" />
         <ToolbarButton icon={SkipForward} label="Step" onClick={step} testId="step-btn" />
         <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} testId="reset-btn" />
-        <Select value="" onValueChange={(v) => fastForward(Number(v))}>
+        <Select value={String(speed)} onValueChange={(v) => {
+          const s = Number(v)
+          setSpeed(s)
+          if (isRunning) playAtSpeed(s)
+        }}>
           <SelectTrigger className="h-7 w-16 text-xs">
-            <SelectValue placeholder="FF" />
+            <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[2, 5, 10, 25, 50, 100].map((n) => (
+            {[1, 2, 5, 10, 25, 50, 100].map((n) => (
               <SelectItem key={n} value={String(n)} className="text-xs">{n}×</SelectItem>
             ))}
           </SelectContent>

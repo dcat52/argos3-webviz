@@ -19,6 +19,7 @@ interface ConnectionState {
   reset: () => void
   terminate: () => void
   fastForward: (steps?: number) => void
+  playAtSpeed: (speed: number) => void
   moveEntity: (id: string, pos: Vec3, orient: Quaternion) => void
 }
 
@@ -70,6 +71,15 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   reset: () => get().send({ command: 'reset' }),
   terminate: () => get().send({ command: 'terminate' }),
   fastForward: (steps?) => get().send({ command: 'fastforward', ...(steps !== undefined && { steps }) }),
+  playAtSpeed: (speed: number) => {
+    const { send } = get()
+    // Pause first to allow state transition, then start at new speed
+    send({ command: 'pause' })
+    setTimeout(() => {
+      if (speed <= 1) send({ command: 'play' })
+      else send({ command: 'fastforward', steps: speed })
+    }, 50)
+  },
   moveEntity: (id, pos, orient) =>
     get().send({ command: 'moveEntity', entity_id: id, position: pos, orientation: orient }),
 }))
