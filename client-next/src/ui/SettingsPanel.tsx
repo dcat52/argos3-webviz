@@ -120,7 +120,7 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
               </Row>
               {!s.orthographic && <Row label="FOV">
                 <div className="flex items-center gap-2">
-                  <Slider min={15} max={170} step={1} value={[s.fov]} onValueChange={([v]) => s.set({ fov: v })} className="w-24" />
+                  <Slider min={15} max={107} step={1} value={[s.fov]} onValueChange={([v]) => s.set({ fov: v })} className="w-24" />
                   <span className="text-xs text-muted-foreground w-16">{s.fov}° / {fovToMm(s.fov)}mm</span>
                 </div>
               </Row>}
