@@ -4,7 +4,7 @@ Created: 2026-04-15
 Baseline Commit: `c55a30a` (`client-next`)
 GitHub Issue: N/A
 
-## Status: 🔵 IMPLEMENTATION
+## Status: ✅ COMPLETE
 
 ## Goal
 
@@ -43,6 +43,13 @@ bar, fog control, and real-world environment presets (soccer/football fields).
 - [x] Fog off by default, toggleable
 - [x] Soccer field with regulation markings
 - [x] American football field with yard lines and numbers
+- [x] Orthographic camera option in Settings
+- [x] FOV slider with mm focal length label (ARGoS QT 27mm sensor convention)
+- [x] Rendering settings reactive (FOV, pixel ratio, shadows update live)
+- [x] Collapsible sidebar sections (Inspector, Entities by type, Visualization)
+- [x] SimHUD panel removed (duplicated toolbar info)
+- [x] Fixed-width connection status label (no toolbar bounce)
+- [x] Keyboard shortcuts updated for unified play/pause
 
 ## Effort Estimate
 
@@ -60,3 +67,5 @@ bar, fog control, and real-world environment presets (soccer/football fields).
 | Date | Change |
 |------|--------|
 | 2026-04-15 | Implemented during Canopy integration session |
+| 2026-04-19 | Orthographic camera, FOV/mm labels, reactive settings |
+| 2026-04-19 | Collapsible sidebar, SimHUD removal, toolbar bounce fix |
