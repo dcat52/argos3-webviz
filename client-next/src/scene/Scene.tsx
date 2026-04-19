@@ -158,22 +158,36 @@ function SceneContent() {
   )
 }
 
+function SettingsSync() {
+  const gl = useThree((s) => s.gl)
+  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
+  const fov = useSettingsStore((s) => s.fov)
+  const pixelRatio = useSettingsStore((s) => s.pixelRatio)
+  if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix() }
+  gl.setPixelRatio(pixelRatio)
+  return null
+}
+
 export function Scene() {
   const arena = useExperimentStore((s) => s.arena)
   const envPreset = useSceneSettingsStore((s) => s.envPreset)
   const shadows = useSettingsStore((s) => s.shadows)
   const pixelRatio = useSettingsStore((s) => s.pixelRatio)
+  const fov = useSettingsStore((s) => s.fov)
 
   return (
     <>
     <Canvas
-      camera={{ position: [0, -12, 10], up: [0, 0, 1], fov: 50 }}
+      key={`${shadows}`}
+      camera={{ position: [0, -12, 10], up: [0, 0, 1], fov }}
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
       shadows={shadows}
       dpr={pixelRatio}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, preserveDrawingBuffer: true }}
     >
       <EnvironmentPreset preset={envPreset} arena={arena} />
+
+      <SettingsSync />
 
       <ambientLight intensity={0.6} />
       <directionalLight
