@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog, PanelTop } from 'lucide-react'
+import { Play, Pause, SkipForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog, PanelTop } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -97,7 +97,6 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const currentScene = (userData as { current_scene?: string })?.current_scene
 
   const isPlaying = state === ExperimentState.EXPERIMENT_PLAYING
-  const isFF = state === ExperimentState.EXPERIMENT_FAST_FORWARDING
   const label = state.replace('EXPERIMENT_', '').replace(/_/g, ' ')
 
   const canvasEl = useCanvasRef((s) => s.gl)
@@ -127,11 +126,20 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
         <span className="text-xs text-muted-foreground mr-1" data-testid="connection-status">{status}</span>
         <Separator orientation="vertical" className="h-5" />
-        <ToolbarButton icon={Play} label="Play" active={isPlaying} onClick={play} testId="play-btn" />
+        <ToolbarButton icon={Play} label="Play (1×)" active={isPlaying} onClick={play} testId="play-btn" />
         <ToolbarButton icon={Pause} label="Pause" onClick={pause} testId="pause-btn" />
         <ToolbarButton icon={SkipForward} label="Step" onClick={step} testId="step-btn" />
-        <ToolbarButton icon={FastForward} label="Fast Forward" active={isFF} onClick={() => fastForward()} testId="ff-btn" />
         <ToolbarButton icon={RotateCcw} label="Reset" onClick={reset} testId="reset-btn" />
+        <Select value="" onValueChange={(v) => fastForward(Number(v))}>
+          <SelectTrigger className="h-7 w-16 text-xs">
+            <SelectValue placeholder="FF" />
+          </SelectTrigger>
+          <SelectContent>
+            {[2, 5, 10, 25, 50, 100].map((n) => (
+              <SelectItem key={n} value={String(n)} className="text-xs">{n}×</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Separator orientation="vertical" className="h-5" />
         <span className="text-xs font-mono text-muted-foreground" data-testid="step-counter">{steps}</span>
         <RealTimeRatioBadge />

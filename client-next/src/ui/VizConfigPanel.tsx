@@ -70,7 +70,12 @@ export function VizConfigPanel() {
 
   return (
     <div className="p-3 space-y-1">
-      <h3 className="text-xs font-semibold tracking-wide uppercase text-muted-foreground mb-2">Visualization</h3>
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger className="flex items-center gap-1 w-full text-xs font-semibold uppercase text-muted-foreground py-1 group mb-2">
+          <ChevronRight className="h-3 w-3 transition-transform group-data-[panel-open]:rotate-90" />
+          Visualization
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-1">
 
       <Section title="Presets">
         <Select onValueChange={(id) => {
@@ -179,6 +184,8 @@ export function VizConfigPanel() {
           <ColorInput value={config.heatmap.colorB} onChange={(v) => setConfig({ heatmap: { ...config.heatmap, colorB: v } })} />
         </div>
       </Section>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   )
 }
