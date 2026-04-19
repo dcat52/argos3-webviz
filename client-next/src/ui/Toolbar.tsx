@@ -1,6 +1,6 @@
 import { useState, type RefObject } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog } from 'lucide-react'
+import { Play, Pause, SkipForward, FastForward, RotateCcw, Activity, Settings, Camera, Maximize2, Minimize2, Video, VideoOff, CloudFog, PanelTop } from 'lucide-react'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useExperimentStore } from '../stores/experimentStore'
 import { useSceneSettingsStore } from '../stores/sceneSettingsStore'
@@ -15,6 +15,7 @@ import { PerspectiveSelector } from './PerspectiveSelector'
 import { SettingsPanel } from './SettingsPanel'
 import { useCanvasRef } from '@/stores/canvasRefStore'
 import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
+import { usePanelStore } from '@/stores/panelStore'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -53,6 +54,22 @@ function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
   )
 }
 
+function PanelsDropdown({ onClose }: { onClose: () => void }) {
+  const panels = usePanelStore((s) => s.panels)
+  const toggle = usePanelStore((s) => s.toggle)
+  const names: Record<string, string> = { 'sim-hud': 'Simulation HUD', 'experiment-data': 'Experiment Data', 'event-log': 'Event Log' }
+  return (
+    <div className="absolute top-full left-0 mt-1 z-50 bg-card border rounded-md shadow-lg p-1 min-w-[160px]" onMouseLeave={onClose}>
+      {Object.entries(panels).map(([id, p]) => (
+        <button key={id} onClick={() => toggle(id)} className="flex items-center gap-2 w-full text-left text-xs px-2 py-1 rounded hover:bg-accent">
+          <span className={p.open ? 'text-green-400' : 'text-muted-foreground'}>{p.open ? '☑' : '☐'}</span>
+          {names[id] ?? id}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElement | null> }) {
   const { status, play, pause, step, fastForward, reset } = useConnectionStore(
     useShallow((s) => ({ status: s.status, play: s.play, pause: s.pause, step: s.step, fastForward: s.fastForward, reset: s.reset }))
@@ -69,6 +86,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const toggleFog = useSceneSettingsStore((s) => s.toggleFog)
 
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [panelsOpen, setPanelsOpen] = useState(false)
   const [isFullscreen, setIsFullscreen] = useState(false)
   const videoState = useVideoRecordingStore((s) => s.state)
   const videoDuration = useVideoRecordingStore((s) => s.duration)
@@ -122,6 +140,12 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
         <Separator orientation="vertical" className="h-5" />
         <ToolbarButton icon={Activity} label="Toggle FPS" active={showFps} onClick={toggleFps} />
         <ToolbarButton icon={CloudFog} label="Toggle Fog" active={showFog} onClick={toggleFog} />
+        <div className="relative">
+          <ToolbarButton icon={PanelTop} label="Panels" active={panelsOpen} onClick={() => setPanelsOpen(!panelsOpen)} />
+          {panelsOpen && (
+            <PanelsDropdown onClose={() => setPanelsOpen(false)} />
+          )}
+        </div>
         <ToolbarButton icon={Camera} label="Screenshot" onClick={takeScreenshot} />
         {videoState === 'recording' ? (
           <>

@@ -5,6 +5,7 @@ import { Sidebar } from './Sidebar'
 import { LogPanel } from './LogPanel'
 import { Scene } from '../scene/Scene'
 import { RecordingControls } from './RecordingControls'
+import { PanelLayer } from './PanelLayer'
 
 export function Layout() {
   const viewportRef = useRef<HTMLDivElement>(null)
@@ -22,6 +23,7 @@ export function Layout() {
             <Panel id="viewport" defaultSize="75%" minSize="20%">
               <div ref={viewportRef} className="relative w-full h-full">
                 <Scene />
+                <PanelLayer />
               </div>
             </Panel>
             <Separator className="h-1 bg-border hover:bg-primary/30 transition-colors cursor-row-resize" />
