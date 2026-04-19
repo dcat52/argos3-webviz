@@ -141,8 +141,15 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {[1, 2, 5, 10, 25, 50, 100].map((n) => (
-              <SelectItem key={n} value={String(n)} className="text-xs">{n}×</SelectItem>
+            {[
+              { value: 1, label: '1×' },
+              { value: 2, label: '2×' },
+              { value: 5, label: '5×' },
+              { value: 10, label: '10×' },
+              { value: 50, label: '50×' },
+              { value: 1000, label: '∞' },
+            ].map((o) => (
+              <SelectItem key={o.value} value={String(o.value)} className="text-xs">{o.label}</SelectItem>
             ))}
           </SelectContent>
         </Select>
