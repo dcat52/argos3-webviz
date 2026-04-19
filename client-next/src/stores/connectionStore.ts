@@ -73,11 +73,16 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   fastForward: (steps?) => get().send({ command: 'fastforward', ...(steps !== undefined && { steps }) }),
   playAtSpeed: (speed: number) => {
     const { send } = get()
-    // Pause first to allow state transition, then start at new speed
     send({ command: 'pause' })
     setTimeout(() => {
-      if (speed <= 1) send({ command: 'play' })
-      else send({ command: 'fastforward', steps: speed })
+      if (speed >= 1000) {
+        // Infinity: no sleep, max frame skip
+        send({ command: 'fastforward', steps: 1000 })
+      } else {
+        // Set real-time factor and play (sleep-based speed control)
+        send({ command: 'speed', factor: speed })
+        send({ command: 'play' })
+      }
     }, 50)
   },
   moveEntity: (id, pos, orient) =>

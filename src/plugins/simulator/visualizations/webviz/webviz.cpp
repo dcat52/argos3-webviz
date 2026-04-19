@@ -293,6 +293,15 @@ namespace argos {
           FastForwardExperiment();
         }
 
+      } else if (strCmd.compare("speed") == 0) {
+        try {
+          Real fFactor = c_json_command["factor"].get<Real>();
+          if (fFactor > 0 && fFactor <= 1000) {
+            m_fRealTimeFactor = fFactor;
+            LOG << "[INFO] Real-time factor set to " << fFactor << '\n';
+          }
+        } catch (const std::exception& _ignored) {}
+
       } else if (strCmd.compare("moveEntity") == 0) {
         try {
           CVector3 cNewPos;
