@@ -16,7 +16,7 @@ import { SettingsPanel } from './SettingsPanel'
 import { useCanvasRef } from '@/stores/canvasRefStore'
 import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
 import { usePanelStore } from '@/stores/panelStore'
-import { SPEED_OPTIONS } from '@/lib/defaults'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -142,7 +142,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SPEED_OPTIONS.map((o) => (
+            {useSettingsStore.getState().speedOptions.map((o) => (
               <SelectItem key={o.value} value={String(o.value)} className="text-xs">{o.label}</SelectItem>
             ))}
           </SelectContent>

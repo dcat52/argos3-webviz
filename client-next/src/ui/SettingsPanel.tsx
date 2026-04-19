@@ -76,6 +76,28 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
               </Row>
             </Section>
 
+            <Section title="Speed Options">
+              <div className="space-y-1">
+                {s.speedOptions.map((o, i) => (
+                  <div key={i} className="flex items-center gap-1">
+                    <Input type="number" step="any" value={o.value} onChange={(e) => {
+                      const v = Number(e.target.value)
+                      const next = [...s.speedOptions]
+                      next[i] = { value: v, label: v >= 1000 ? '∞' : v + '×' }
+                      s.set({ speedOptions: next })
+                    }} className="w-16 h-6 text-xs" />
+                    <span className="text-xs text-muted-foreground flex-1">{o.label}</span>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-xs text-muted-foreground" onClick={() => {
+                      s.set({ speedOptions: s.speedOptions.filter((_, j) => j !== i) })
+                    }}>×</Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" className="h-6 text-xs w-full" onClick={() => {
+                  s.set({ speedOptions: [...s.speedOptions.slice(0, -1), { value: 20, label: '20×' }, s.speedOptions[s.speedOptions.length - 1]] })
+                }}>+ Add</Button>
+              </div>
+            </Section>
+
             <Section title="Rendering">
               <Row label="Shadows">
                 <Switch checked={s.shadows} onCheckedChange={(v) => s.set({ shadows: v })} />
