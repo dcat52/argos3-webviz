@@ -15,6 +15,8 @@
 #include <argos3/plugins/simulator/visualizations/webviz/webviz.h>
 
 #include <iomanip>
+
+#include <iomanip>
 #include <nlohmann/json.hpp>
 
 namespace argos {
@@ -32,6 +34,14 @@ namespace argos {
         cJson["type"] = c_entity.GetTypeDescription();
         cJson["id"] = c_entity.GetId();
         cJson["is_movable"] = c_entity.GetEmbodiedEntity().IsMovable();
+
+        /* Get body color */
+        const CColor& cBodyColor = c_entity.GetBodyColor();
+        std::stringstream strBodyColorStream;
+        strBodyColorStream << "#" << std::setfill('0') << std::setw(6) << std::hex
+                           << (cBodyColor.GetRed() << 16 | cBodyColor.GetGreen() << 8 |
+                               cBodyColor.GetBlue());
+        cJson["color"] = strBodyColorStream.str();
 
         /* Get Size of the Cylinder */
         cJson["height"] = c_entity.GetHeight();
