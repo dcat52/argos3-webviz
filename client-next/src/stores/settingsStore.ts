@@ -1,11 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { COLORS, CAMERA, LIMITS, RECORDING, CONNECTION, LIGHTING } from '@/lib/defaults'
+import { COLORS, CAMERA, LIMITS, RECORDING, CONNECTION, LIGHTING, SPEED_OPTIONS } from '@/lib/defaults'
+
+interface SpeedOption { value: number; label: string }
 
 interface SettingsState {
   // Connection
   wsUrl: string
   reconnectIntervalMs: number
+  // Speed
+  speedOptions: SpeedOption[]
   // Rendering
   shadows: boolean
   pixelRatio: number
@@ -37,6 +41,7 @@ interface SettingsState {
 const defaults = {
   wsUrl: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${CONNECTION.defaultPort}`,
   reconnectIntervalMs: CONNECTION.reconnectIntervalMs,
+  speedOptions: [...SPEED_OPTIONS],
   shadows: true,
   pixelRatio: 1,
   fov: CAMERA.fov,
