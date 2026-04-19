@@ -1,23 +1,7 @@
 # Future Proposals — Discovered During Canopy Integration
 
 Baseline: `c55a30a` (`client-next`) — post PN-009
-Created: 2026-04-15, updated 2026-04-15
-
----
-
-## Active Design
-
-### PN-013: Floating Panel System
-
-**Goal**: Reusable draggable panel component for HUD, experiment data,
-entity inspector, and event log.
-
-Subsumes old PN-013 (HUD), PN-014 (screenshot — already exists),
-PN-016 (convergence — now generic events inside panels).
-
-See: `docs/proposals/PN-013-floating-panels.md`
-
-**Effort**: ~3 hrs | Medium complexity
+Created: 2026-04-15, updated 2026-04-19
 
 ---
 
@@ -34,16 +18,6 @@ icons floating above each robot.
 - How does this generalize to other per-robot indicators?
 
 **Effort**: TBD
-
----
-
-## Low Priority
-
-### PN-011: Keyboard Shortcuts
-
-**Goal**: Play/pause/step via keyboard.
-
-**Effort**: ~1 hr | Low complexity | Low value — most interaction is browser-based
 
 ---
 
@@ -66,12 +40,29 @@ icons floating above each robot.
 
 ---
 
+## Completed
+
+| PN | Title | Completed |
+|----|-------|-----------|
+| PN-001 | Client-Next Default | 2026-04-13 |
+| PN-002 | Delta Protocol | 2026-04-13 |
+| PN-003 | Recorder / Replay | 2026-04-13 |
+| PN-004 | Viz System | 2026-04-14 |
+| PN-005 | Computed Fields | 2026-04-14 |
+| PN-006 | Benchmarking & Testing | 2026-04-14 |
+| PN-007 | Leo Renderer | 2026-04-14 |
+| PN-008 | Draw Primitives | 2026-04-15 |
+| PN-009 | Integration Fixes | 2026-04-15 |
+| PN-010 | Viewport Polish | 2026-04-19 |
+| PN-011 | Entity Body Color | 2026-04-19 |
+| PN-012 | Configurable Defaults | 2026-04-19 |
+| PN-013 | Floating Panels | 2026-04-19 |
+| PN-014 | Speed Control | 2026-04-19 |
+
 ## Summary
 
 | PN | Title | Status | Effort |
 |----|-------|--------|--------|
-| PN-013 | Floating Panel System | 🟡 Design | 3 hr |
 | PN-015 | HealthWebviz + Status Icons | 📋 Needs discussion | TBD |
-| PN-011 | Keyboard Shortcuts | 📋 Low priority | 1 hr |
 | PN-017 | Multi-Experiment Dashboard | 📋 Future | 4 hr |
 | PN-018 | Timeline Scrubber | 📋 Future | 4 hr |
