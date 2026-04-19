@@ -14,6 +14,7 @@ interface SettingsState {
   shadows: boolean
   pixelRatio: number
   fov: number
+  orthographic: boolean
   // Camera
   cameraMinDistance: number
   cameraMaxDistanceMultiplier: number
@@ -45,6 +46,7 @@ const defaults = {
   shadows: true,
   pixelRatio: 1,
   fov: CAMERA.fov,
+  orthographic: false,
   cameraMinDistance: CAMERA.minDistance,
   cameraMaxDistanceMultiplier: CAMERA.maxDistanceMultiplier,
   cameraSmoothTime: CAMERA.smoothTime,
