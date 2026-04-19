@@ -58,7 +58,7 @@ function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
 function PanelsDropdown({ onClose }: { onClose: () => void }) {
   const panels = usePanelStore((s) => s.panels)
   const toggle = usePanelStore((s) => s.toggle)
-  const names: Record<string, string> = { 'sim-hud': 'Simulation HUD', 'experiment-data': 'Experiment Data', 'event-log': 'Event Log' }
+  const names: Record<string, string> = { 'experiment-data': 'Experiment Data', 'event-log': 'Event Log' }
   return (
     <div className="absolute top-full left-0 mt-1 z-50 bg-card border rounded-md shadow-lg p-1 min-w-[160px]" onMouseLeave={onClose}>
       {Object.entries(panels).map(([id, p]) => (
