@@ -126,7 +126,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
     <>
       <div className="flex items-center gap-1.5 h-10 px-3 border-b bg-card">
         <div className={`w-2 h-2 rounded-full ${statusColors[status]}`} />
-        <span className="text-xs text-muted-foreground mr-1" data-testid="connection-status">{status}</span>
+        <span className="text-xs text-muted-foreground mr-1 w-[78px]" data-testid="connection-status">{status}</span>
         <Separator orientation="vertical" className="h-5" />
         <ToolbarButton icon={isRunning ? Pause : Play} label={isRunning ? 'Pause' : `Play (${speed}×)`} active={isRunning} onClick={() => {
           if (isRunning) { pause() } else { playAtSpeed(speed) }
