@@ -41,6 +41,11 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
   )
 }
 
+/** Convert vertical FOV (degrees) to focal length (mm), matching ARGoS QT 27mm sensor */
+function fovToMm(fov: number): number {
+  return Math.round(13.5 / Math.tan((fov * Math.PI / 180) / 2))
+}
+
 export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
   const s = useSettingsStore()
   const [draft, setDraft] = useState(s.wsUrl)
@@ -112,8 +117,8 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
               </Row>
               <Row label="FOV">
                 <div className="flex items-center gap-2">
-                  <Slider min={30} max={90} step={5} value={[s.fov]} onValueChange={([v]) => s.set({ fov: v })} className="w-24" />
-                  <span className="text-xs text-muted-foreground w-6">{s.fov}°</span>
+                  <Slider min={20} max={90} step={1} value={[s.fov]} onValueChange={([v]) => s.set({ fov: v })} className="w-24" />
+                  <span className="text-xs text-muted-foreground w-16">{s.fov}° / {fovToMm(s.fov)}mm</span>
                 </div>
               </Row>
             </Section>
