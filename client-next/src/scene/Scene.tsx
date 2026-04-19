@@ -160,10 +160,10 @@ function SceneContent() {
 
 function SettingsSync() {
   const gl = useThree((s) => s.gl)
-  const camera = useThree((s) => s.camera) as THREE.PerspectiveCamera
+  const camera = useThree((s) => s.camera)
   const fov = useSettingsStore((s) => s.fov)
   const pixelRatio = useSettingsStore((s) => s.pixelRatio)
-  if (camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix() }
+  if ('fov' in camera && camera.fov !== fov) { camera.fov = fov; camera.updateProjectionMatrix() }
   gl.setPixelRatio(pixelRatio)
   return null
 }
@@ -174,12 +174,17 @@ export function Scene() {
   const shadows = useSettingsStore((s) => s.shadows)
   const pixelRatio = useSettingsStore((s) => s.pixelRatio)
   const fov = useSettingsStore((s) => s.fov)
+  const orthographic = useSettingsStore((s) => s.orthographic)
 
   return (
     <>
     <Canvas
-      key={`${shadows}`}
-      camera={{ position: [0, -12, 10], up: [0, 0, 1], fov }}
+      key={`${shadows}-${orthographic}`}
+      orthographic={orthographic}
+      camera={orthographic
+        ? { position: [0, -12, 10], up: [0, 0, 1], zoom: 50 }
+        : { position: [0, -12, 10], up: [0, 0, 1], fov }
+      }
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
       shadows={shadows}
       dpr={pixelRatio}

@@ -104,6 +104,9 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
             </Section>
 
             <Section title="Rendering">
+              <Row label="Orthographic">
+                <Switch checked={s.orthographic} onCheckedChange={(v) => s.set({ orthographic: v })} />
+              </Row>
               <Row label="Shadows">
                 <Switch checked={s.shadows} onCheckedChange={(v) => s.set({ shadows: v })} />
               </Row>
@@ -115,12 +118,12 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
                   </SelectContent>
                 </Select>
               </Row>
-              <Row label="FOV">
+              {!s.orthographic && <Row label="FOV">
                 <div className="flex items-center gap-2">
                   <Slider min={15} max={170} step={1} value={[s.fov]} onValueChange={([v]) => s.set({ fov: v })} className="w-24" />
                   <span className="text-xs text-muted-foreground w-16">{s.fov}° / {fovToMm(s.fov)}mm</span>
                 </div>
-              </Row>
+              </Row>}
             </Section>
 
             <Section title="Camera">
