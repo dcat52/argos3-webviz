@@ -1,24 +1,67 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { COLORS, CAMERA, LIMITS, RECORDING, CONNECTION, LIGHTING } from '@/lib/defaults'
 
 interface SettingsState {
+  // Connection
   wsUrl: string
+  reconnectIntervalMs: number
+  // Rendering
   shadows: boolean
   pixelRatio: number
-  setWsUrl: (url: string) => void
-  setShadows: (v: boolean) => void
-  setPixelRatio: (v: number) => void
+  fov: number
+  // Camera
+  cameraMinDistance: number
+  cameraMaxDistanceMultiplier: number
+  cameraSmoothTime: number
+  // Colors
+  selectionColor: string
+  selectionOpacity: number
+  rayHitColor: string
+  rayMissColor: string
+  trailColor: string
+  // Lighting
+  directionalIntensity: number
+  hemisphereIntensity: number
+  // Limits
+  maxLogEntries: number
+  maxEventLogEntries: number
+  // Recording
+  captureFps: number
+  videoBitrate: number
+  // Actions
+  set: (patch: Partial<Omit<SettingsState, 'set' | 'reset'>>) => void
+  reset: () => void
+}
+
+const defaults = {
+  wsUrl: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:${CONNECTION.defaultPort}`,
+  reconnectIntervalMs: CONNECTION.reconnectIntervalMs,
+  shadows: true,
+  pixelRatio: 1,
+  fov: CAMERA.fov,
+  cameraMinDistance: CAMERA.minDistance,
+  cameraMaxDistanceMultiplier: CAMERA.maxDistanceMultiplier,
+  cameraSmoothTime: CAMERA.smoothTime,
+  selectionColor: COLORS.selection,
+  selectionOpacity: COLORS.selectionOpacity,
+  rayHitColor: COLORS.rayHit,
+  rayMissColor: COLORS.rayMiss,
+  trailColor: COLORS.trail,
+  directionalIntensity: LIGHTING.directionalIntensity,
+  hemisphereIntensity: LIGHTING.hemisphereIntensity,
+  maxLogEntries: LIMITS.maxLogEntries,
+  maxEventLogEntries: LIMITS.maxEventLogEntries,
+  captureFps: RECORDING.captureFps,
+  videoBitrate: RECORDING.videoBitrate,
 }
 
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      wsUrl: `ws://${typeof window !== 'undefined' ? window.location.hostname : 'localhost'}:3000`,
-      shadows: true,
-      pixelRatio: 1,
-      setWsUrl: (wsUrl) => set({ wsUrl }),
-      setShadows: (shadows) => set({ shadows }),
-      setPixelRatio: (pixelRatio) => set({ pixelRatio }),
+      ...defaults,
+      set: (patch) => set(patch),
+      reset: () => set(defaults),
     }),
     { name: 'argos-settings' }
   )

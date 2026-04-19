@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 import { EntityRendererProps } from '../registry'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { KheperaIVEntity } from '../../types/protocol'
 
 function parseHex(hex: string): string {
@@ -65,7 +66,7 @@ export function KheperaIV({ entity, selected, onClick, onDoubleClick, overrideCo
         <Line
           key={`ray-${i}`}
           points={[ray.start, ray.end]}
-          color={ray.hit ? '#44ff44' : '#ff4444'}
+          color={ray.hit ? useSettingsStore.getState().rayHitColor : useSettingsStore.getState().rayMissColor}
           lineWidth={1}
           transparent
           opacity={0.5}

@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
 import { useExperimentStore } from '@/stores/experimentStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { FloatingPanel } from '../FloatingPanel'
 
 interface EventEntry { step: number; label: string; type?: 'info' | 'success' | 'warning' }
@@ -15,7 +16,7 @@ interface EventLogState {
 const useEventLog = create<EventLogState>((set) => ({
   events: [],
   lastStep: -1,
-  push: (entries) => set((s) => ({ events: [...s.events, ...entries].slice(-200), lastStep: entries[entries.length - 1]?.step ?? s.lastStep })),
+  push: (entries) => set((s) => ({ events: [...s.events, ...entries].slice(-useSettingsStore.getState().maxEventLogEntries), lastStep: entries[entries.length - 1]?.step ?? s.lastStep })),
   clear: () => set({ events: [], lastStep: -1 }),
 }))
 

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { useCanvasRef } from './canvasRefStore'
+import { useSettingsStore } from './settingsStore'
 
 type VideoState = 'idle' | 'recording'
 
@@ -23,14 +24,15 @@ export const useVideoRecordingStore = create<VideoRecordingStore>((set, get) => 
     if (!gl) return
 
     const canvas = gl.domElement
-    const stream = canvas.captureStream(30)
+    const { captureFps, videoBitrate } = useSettingsStore.getState()
+    const stream = canvas.captureStream(captureFps)
     chunks = []
 
     recorder = new MediaRecorder(stream, {
       mimeType: MediaRecorder.isTypeSupported('video/webm;codecs=vp9')
         ? 'video/webm;codecs=vp9'
         : 'video/webm',
-      videoBitsPerSecond: 5_000_000,
+      videoBitsPerSecond: videoBitrate,
     })
 
     recorder.ondataavailable = (e) => {

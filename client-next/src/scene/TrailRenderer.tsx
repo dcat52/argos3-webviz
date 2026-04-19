@@ -2,6 +2,7 @@ import { useRef, useEffect, useState } from 'react'
 import { Line } from '@react-three/drei'
 import { useVizConfigStore } from '@/stores/vizConfigStore'
 import { useExperimentStore } from '@/stores/experimentStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 export function TrailRenderer() {
   const config = useVizConfigStore((s) => s.config.trails)
@@ -38,7 +39,7 @@ export function TrailRenderer() {
           <Line
             key={`${id}-${render}`}
             points={points.map(p => [...p] as [number, number, number])}
-            color="#44aaff"
+            color={useSettingsStore.getState().trailColor}
             lineWidth={1.5}
             transparent
             opacity={config.opacity}

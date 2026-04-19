@@ -189,8 +189,8 @@ export function Scene() {
         shadow-camera-bottom={-15}
         shadow-bias={-0.0001}
       />
-      <directionalLight position={[-5, 8, 4]} intensity={0.3} color="#aaccff" />
-      <hemisphereLight args={['#ddeeff', '#f0eeee', 0.4]} />
+      <directionalLight position={[-5, 8, 4]} intensity={useSettingsStore.getState().directionalIntensity} color="#aaccff" />
+      <hemisphereLight args={['#ddeeff', '#f0eeee', useSettingsStore.getState().hemisphereIntensity]} />
 
       <SceneContent />
 

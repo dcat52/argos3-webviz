@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight, Download, Upload } from 'lucide-react'
 import type { FieldSchema } from '@/lib/vizEngine'
 import { vizPresets, getAvailablePresets } from '@/lib/vizPresets'
+import { VIZ_DEFAULTS } from '@/lib/defaults'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -63,10 +64,10 @@ export function VizConfigPanel() {
   }
 
   const updateColorBy = (patch: Partial<NonNullable<VizConfig['colorBy']>>) =>
-    setConfig({ colorBy: { enabled: false, field: '', scale: 'linear', colorA: '#0000ff', colorB: '#ff0000', ...config.colorBy, ...patch } })
+    setConfig({ colorBy: { enabled: false, field: '', scale: 'linear', colorA: VIZ_DEFAULTS.colorByColorA, colorB: VIZ_DEFAULTS.colorByColorB, ...config.colorBy, ...patch } })
 
   const updateLinks = (patch: Partial<NonNullable<VizConfig['links']>>) =>
-    setConfig({ links: { enabled: false, field: '', color: '#44aaff', opacity: 0.6, ...config.links, ...patch } })
+    setConfig({ links: { enabled: false, field: '', color: VIZ_DEFAULTS.linksColor, opacity: VIZ_DEFAULTS.linksOpacity, ...config.links, ...patch } })
 
   return (
     <div className="p-3 space-y-1">

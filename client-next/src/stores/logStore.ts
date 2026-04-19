@@ -1,7 +1,6 @@
 import { create } from 'zustand'
 import type { LogEntry } from '../types/protocol'
-
-const MAX_ENTRIES = 1000
+import { useSettingsStore } from './settingsStore'
 
 interface LogState {
   logs: LogEntry[]
@@ -23,8 +22,8 @@ export const useLogStore = create<LogState>((set) => ({
         else newLogs.push(e)
       }
       return {
-        logs: [...s.logs, ...newLogs].slice(-MAX_ENTRIES),
-        errors: [...s.errors, ...newErrors].slice(-MAX_ENTRIES),
+        logs: [...s.logs, ...newLogs].slice(-useSettingsStore.getState().maxLogEntries),
+        errors: [...s.errors, ...newErrors].slice(-useSettingsStore.getState().maxLogEntries),
       }
     }),
 

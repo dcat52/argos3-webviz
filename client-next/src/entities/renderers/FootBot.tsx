@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { EntityRendererProps } from '../registry'
 import { FootBotEntity } from '../../types/protocol'
 
@@ -66,7 +67,7 @@ export function FootBot({ entity, selected, onClick, onDoubleClick, overrideColo
         <Line
           key={`ray-${i}`}
           points={[ray.start, ray.end]}
-          color={ray.hit ? '#44ff44' : '#ff4444'}
+          color={ray.hit ? useSettingsStore.getState().rayHitColor : useSettingsStore.getState().rayMissColor}
           lineWidth={1}
           transparent
           opacity={0.5}

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import * as THREE from 'three'
 import { Line } from '@react-three/drei'
 import type { EntityRendererProps } from '../registry'
+import { useSettingsStore } from '@/stores/settingsStore'
 import type { LeoEntity } from '../../types/protocol'
 
 function parseRay(ray: string) {
@@ -38,7 +39,7 @@ export function LeoRenderer({ entity, selected, onClick, onDoubleClick, override
         <Line
           key={`ray-${i}`}
           points={[ray.start, ray.end]}
-          color={ray.hit ? '#44ff44' : '#ff4444'}
+          color={ray.hit ? useSettingsStore.getState().rayHitColor : useSettingsStore.getState().rayMissColor}
           lineWidth={1}
           transparent
           opacity={0.5}

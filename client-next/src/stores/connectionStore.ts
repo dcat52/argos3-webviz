@@ -5,6 +5,7 @@ import { useExperimentStore } from './experimentStore'
 import { useLogStore } from './logStore'
 import { useRecordingStore } from './recordingStore'
 import { useSettingsStore } from './settingsStore'
+import { SPEED_INFINITY_THRESHOLD, SPEED_TRANSITION_DELAY_MS } from '@/lib/defaults'
 
 interface ConnectionState {
   status: ConnectionStatus
@@ -75,15 +76,13 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
     const { send } = get()
     send({ command: 'pause' })
     setTimeout(() => {
-      if (speed >= 1000) {
-        // Infinity: no sleep, max frame skip
-        send({ command: 'fastforward', steps: 1000 })
+      if (speed >= SPEED_INFINITY_THRESHOLD) {
+        send({ command: 'fastforward', steps: SPEED_INFINITY_THRESHOLD })
       } else {
-        // Set real-time factor and play (sleep-based speed control)
         send({ command: 'speed', factor: speed })
         send({ command: 'play' })
       }
-    }, 50)
+    }, SPEED_TRANSITION_DELAY_MS)
   },
   moveEntity: (id, pos, orient) =>
     get().send({ command: 'moveEntity', entity_id: id, position: pos, orientation: orient }),
