@@ -3,7 +3,7 @@
 Created: 2026-04-19
 GitHub Issue: #22
 
-## Status: 🔵 IMPLEMENTATION
+## Status: ✅ COMPLETE
 
 ## Goal
 
@@ -66,7 +66,7 @@ Walls can be overridden to gray via XML: `color="gray60"`
 
 ## Dependencies
 
-- **Requires**: dcat52/argos3 `feat/entity-body-color` branch
+- **Requires**: dcat52/argos3 (body color on master)
 - **Enhanced by**: None
 - **Blocks**: None
 
@@ -77,10 +77,9 @@ Walls can be overridden to gray via XML: `color="gray60"`
 - [x] Webviz broadcasts color field
 - [x] Client-next renders broadcast color
 - [x] Backward compatible — no XML change required for existing experiments
-- [ ] Merged to master
 
 ## Changelog
 
 | Date | Change |
 |------|--------|
-| 2026-04-19 | Implementation complete, PR #23 open |
+| 2026-04-19 | Implementation complete, PR #23 merged |
