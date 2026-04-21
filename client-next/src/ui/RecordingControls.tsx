@@ -1,25 +1,55 @@
-import { useRef, useCallback } from 'react'
+import { useRef, useCallback, useState } from 'react'
 import { useShallow } from 'zustand/shallow'
-import { Circle, Square, Play, Pause, Download, Upload, FileUp } from 'lucide-react'
+import { Circle, Square, Play, Pause, Download, Upload, FileUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useRecordingStore } from '@/stores/recordingStore'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Slider } from '@/components/ui/slider'
 
-function Btn({ icon: Icon, label, onClick, variant, className, testId }: {
-  icon: React.ElementType; label: string; onClick: () => void; variant?: 'ghost' | 'default'; className?: string; testId?: string
+function Btn({ icon: Icon, label, onClick, variant, className, testId, disabled }: {
+  icon: React.ElementType; label: string; onClick: () => void; variant?: 'ghost' | 'default'; className?: string; testId?: string; disabled?: boolean
 }) {
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button variant={variant ?? 'ghost'} size="icon" className={`h-6 w-6 ${className ?? ''}`} onClick={onClick} data-testid={testId}>
+        <Button variant={variant ?? 'ghost'} size="icon" className={`h-6 w-6 ${className ?? ''}`} onClick={onClick} data-testid={testId} disabled={disabled}>
           <Icon className="h-3 w-3" />
         </Button>
       </TooltipTrigger>
       <TooltipContent side="bottom"><p>{label}</p></TooltipContent>
     </Tooltip>
   )
+}
+
+function TimelineTooltip({ totalFrames, sliderRef, everyNSteps }: {
+  totalFrames: number; sliderRef: React.RefObject<HTMLDivElement | null>; everyNSteps?: number
+}) {
+  const [hover, setHover] = useState<{ frame: number; x: number } | null>(null)
+
+  const onMove = useCallback((e: React.MouseEvent) => {
+    const el = sliderRef.current
+    if (!el || totalFrames <= 1) return
+    const rect = el.getBoundingClientRect()
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width))
+    const frame = Math.round(pct * (totalFrames - 1))
+    setHover({ frame, x: e.clientX - rect.left })
+  }, [totalFrames, sliderRef])
+
+  const onLeave = useCallback(() => setHover(null), [])
+
+  return {
+    onMove,
+    onLeave,
+    tooltip: hover !== null ? (
+      <div
+        className="absolute -top-7 pointer-events-none bg-popover text-popover-foreground border rounded px-1.5 py-0.5 text-[10px] font-mono whitespace-nowrap z-50"
+        style={{ left: hover.x, transform: 'translateX(-50%)' }}
+      >
+        Frame {hover.frame + 1}{everyNSteps ? ` · Step ${hover.frame * everyNSteps}` : ''}
+      </div>
+    ) : null,
+  }
 }
 
 export function RecordingControls() {
@@ -35,6 +65,9 @@ export function RecordingControls() {
       togglePlayPause: s.togglePlayPause, setSpeed: s.setSpeed, seekTo: s.seekTo,
     })))
   const fileRef = useRef<HTMLInputElement>(null)
+  const sliderRef = useRef<HTMLDivElement>(null)
+
+  const everyNSteps = argosrecHeader?.every_n_steps
 
   const handleFile = useCallback((file: File) => {
     if (file.name.endsWith('.argosrec') || file.name.endsWith('.argosrec.gz')) {
@@ -85,6 +118,35 @@ export function RecordingControls() {
 
   // idle with frames or replaying
   return (
+    <ReplayBar
+      state={state} playing={playing} frameIndex={frameIndex} totalFrames={totalFrames}
+      speed={speed} isArgosrec={isArgosrec} argosrecHeader={argosrecHeader}
+      argosrecWarnings={argosrecWarnings} everyNSteps={everyNSteps}
+      togglePlayPause={togglePlayPause} stopReplay={stopReplay} startReplay={startReplay}
+      startRecording={startRecording} seekTo={seekTo} setSpeed={setSpeed}
+      downloadRecording={downloadRecording} fileRef={fileRef} sliderRef={sliderRef}
+      handleDrop={handleDrop} handleDragOver={handleDragOver} handleFileInput={handleFileInput}
+    />
+  )
+}
+
+function ReplayBar({ state, playing, frameIndex, totalFrames, speed, isArgosrec, argosrecHeader,
+  argosrecWarnings, everyNSteps, togglePlayPause, stopReplay, startReplay, startRecording,
+  seekTo, setSpeed, downloadRecording, fileRef, sliderRef, handleDrop, handleDragOver, handleFileInput,
+}: {
+  state: RecordingState; playing: boolean; frameIndex: number; totalFrames: number
+  speed: number; isArgosrec: boolean; argosrecHeader: import('@/protocol/argosrecParser').ArgosrecHeader | null
+  argosrecWarnings: string[]; everyNSteps?: number
+  togglePlayPause: () => void; stopReplay: () => void; startReplay: () => void
+  startRecording: () => void; seekTo: (idx: number) => void; setSpeed: (s: number) => void
+  downloadRecording: () => void; fileRef: React.RefObject<HTMLInputElement | null>
+  sliderRef: React.RefObject<HTMLDivElement | null>
+  handleDrop: (e: React.DragEvent) => void; handleDragOver: (e: React.DragEvent) => void
+  handleFileInput: (e: React.ChangeEvent<HTMLInputElement>) => void
+}) {
+  const { onMove, onLeave, tooltip } = TimelineTooltip({ totalFrames, sliderRef, everyNSteps })
+
+  return (
     <div
       className="flex items-center gap-1.5 h-7 px-3 border-b bg-card/50"
       onDrop={handleDrop}
@@ -92,7 +154,9 @@ export function RecordingControls() {
     >
       {state === 'replaying' ? (
         <>
-          <Btn icon={playing ? Pause : Play} label={playing ? 'Pause' : 'Play'} onClick={togglePlayPause} />
+          <Btn icon={ChevronLeft} label="Previous frame" onClick={() => seekTo(frameIndex - 1)} disabled={frameIndex <= 0} testId="frame-back-btn" />
+          <Btn icon={playing ? Pause : Play} label={playing ? 'Pause' : 'Play'} onClick={togglePlayPause} testId="play-pause-btn" />
+          <Btn icon={ChevronRight} label="Next frame" onClick={() => seekTo(frameIndex + 1)} disabled={frameIndex >= totalFrames - 1} testId="frame-fwd-btn" />
           <Btn icon={Square} label="Stop Replay" onClick={stopReplay} />
         </>
       ) : (
@@ -101,15 +165,22 @@ export function RecordingControls() {
           <Btn icon={Circle} label="Record" onClick={startRecording} className="text-red-500" testId="record-btn" />
         </>
       )}
-      <Slider
-        value={[frameIndex]}
-        min={0}
-        max={Math.max(totalFrames - 1, 0)}
-        step={1}
-        onValueChange={(v) => seekTo(Array.isArray(v) ? v[0] : v)}
-        className="w-40"
-      />
-      <span className="text-[10px] font-mono text-muted-foreground">{frameIndex + 1}/{totalFrames}</span>
+      <div ref={sliderRef} className="relative flex-1 min-w-0" onMouseMove={onMove} onMouseLeave={onLeave}>
+        {tooltip}
+        <Slider
+          value={[frameIndex]}
+          min={0}
+          max={Math.max(totalFrames - 1, 0)}
+          step={1}
+          onValueChange={(v) => seekTo(Array.isArray(v) ? v[0] : v)}
+          className="w-full"
+          data-testid="timeline-slider"
+        />
+      </div>
+      <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap" data-testid="frame-display">
+        {frameIndex + 1}/{totalFrames}
+        {everyNSteps ? ` · Step ${frameIndex * everyNSteps}` : ''}
+      </span>
       {isArgosrec && argosrecHeader?.created && (
         <span className="text-[10px] text-muted-foreground truncate max-w-32" title={argosrecHeader.created}>
           {new Date(argosrecHeader.created).toLocaleDateString()}
@@ -119,11 +190,11 @@ export function RecordingControls() {
         <span className="text-[10px] text-yellow-500" title={argosrecWarnings.join('\n')}>⚠</span>
       )}
       <Select value={String(speed)} onValueChange={(v) => setSpeed(Number(v))}>
-        <SelectTrigger className="h-5 w-14 text-[10px]">
+        <SelectTrigger className="h-5 w-14 text-[10px]" data-testid="speed-select">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          {[0.5, 1, 2, 4].map((s) => (
+          {[0.5, 1, 2, 4, 8, 16].map((s) => (
             <SelectItem key={s} value={String(s)} className="text-[10px]">{s}x</SelectItem>
           ))}
         </SelectContent>
@@ -134,3 +205,5 @@ export function RecordingControls() {
     </div>
   )
 }
+
+type RecordingState = 'idle' | 'recording' | 'replaying'

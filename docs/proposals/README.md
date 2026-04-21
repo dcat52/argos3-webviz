@@ -52,10 +52,29 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 | PN | Title | Status | Effort | GitHub Issue |
 |----|-------|--------|--------|-------------|
-| PN-017 | [Multi-Experiment Dashboard](PN-017-multi-experiment-dashboard.md) | 🟣 VERIFICATION | ~3h | TBD |
+| PN-018 | [Timeline Scrubber](PN-018-timeline-scrubber.md) | 🟣 VERIFICATION | ~3.5h | — |
+
+## Completed Proposals
+
+| PN | Title | Completed |
+|----|-------|-----------|
+| PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
+| PN-014 | Speed Control | 2026-04-19 |
+| PN-013 | Floating Panels | 2026-04-19 |
+| PN-012 | Configurable Defaults | 2026-04-19 |
+| PN-011 | Entity Body Color | 2026-04-19 |
+| PN-010 | Viewport Polish | 2026-04-19 |
+| PN-009 | Integration Fixes | 2026-04-15 |
+| PN-008 | Draw Primitives | 2026-04-15 |
+| PN-007 | Leo Renderer | 2026-04-14 |
+| PN-006 | Benchmarking & Testing | 2026-04-14 |
+| PN-005 | Computed Fields | 2026-04-14 |
+| PN-004 | Viz System | 2026-04-14 |
+| PN-003 | Recorder / Replay | 2026-04-13 |
+| PN-002 | Delta Protocol | 2026-04-13 |
+| PN-001 | Client-Next Default | 2026-04-13 |
 
 ## Future Proposals
-
 See [FUTURE.md](FUTURE.md) for PN-015, PN-018, and other ideas not yet started.
 
 ## Parity Tracking
