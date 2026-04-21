@@ -53,6 +53,7 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 | PN | Title | Status | Effort | GitHub Issue |
 |----|-------|--------|--------|-------------|
 | PN-018 | [Timeline Scrubber](PN-018-timeline-scrubber.md) | 🟣 VERIFICATION | ~3.5h | — |
+| PN-019 | [Entity Manipulation & Spawning](PN-019-entity-manipulation.md) | 🔵 IMPLEMENTATION | ~20h | — |
 
 ## Completed Proposals
 

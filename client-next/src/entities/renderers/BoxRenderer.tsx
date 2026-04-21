@@ -1,16 +1,17 @@
 import { EntityRendererProps } from '../registry'
 import { BoxEntity } from '../../types/protocol'
 
-export function BoxRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
+export function BoxRenderer({ entity, selected, ghost, onClick, onDoubleClick, onPointerDown, overrideColor }: EntityRendererProps) {
   const e = entity as BoxEntity
   const { position: p, orientation: q, scale: s } = e
-  const color = overrideColor ?? (selected ? '#8899aa' : (e as any).color ?? (e.is_movable ? '#4488cc' : '#555566'))
+  const color = overrideColor ?? (ghost ? '#64C8FF' : (selected ? '#8899aa' : (e as any).color ?? (e.is_movable ? '#4488cc' : '#555566')))
   return (
     <mesh
       position={[p.x, p.y, p.z + s.z / 2]}
       quaternion={[q.x, q.y, q.z, q.w]}
       onClick={onClick}
       onDoubleClick={onDoubleClick}
+      onPointerDown={onPointerDown}
       castShadow
       receiveShadow
     >
@@ -19,6 +20,9 @@ export function BoxRenderer({ entity, selected, onClick, onDoubleClick, override
         color={color}
         metalness={0.1}
         roughness={0.7}
+        transparent={ghost}
+        opacity={ghost ? 0.3 : 1}
+        depthWrite={!ghost}
       />
     </mesh>
   )

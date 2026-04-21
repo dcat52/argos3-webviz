@@ -123,6 +123,7 @@ export interface DeltaMessage {
   timestamp?: number
   arena?: ArenaInfo
   entities: Record<string, Partial<AnyEntity>>
+  removed?: string[]
   user_data?: unknown
 }
 
@@ -144,7 +145,13 @@ export interface LogMessage {
   messages: LogEntry[]
 }
 
-export type ServerMessage = BroadcastMessage | SchemaMessage | DeltaMessage | EventMessage | LogMessage
+export type ServerMessage = BroadcastMessage | SchemaMessage | DeltaMessage | EventMessage | LogMessage | MetadataMessage
+
+export interface MetadataMessage {
+  type: 'metadata'
+  controllers: string[]
+  entity_types: string[]
+}
 
 // --- Client Commands ---
 
@@ -180,6 +187,48 @@ export interface MoveEntityCommand {
   orientation: Quaternion
 }
 
+export interface AddEntityCommand {
+  command: 'addEntity'
+  type: string
+  id_prefix?: string
+  position: Vec3
+  orientation?: Quaternion
+  controller?: string
+  size?: Vec3
+  movable?: boolean
+  mass?: number
+  radius?: number
+  height?: number
+  color?: string
+}
+
+export interface RemoveEntityCommand {
+  command: 'removeEntity'
+  entity_id: string
+}
+
+export interface GetMetadataCommand {
+  command: 'getMetadata'
+}
+
+export interface DistributeCommand {
+  command: 'distribute'
+  type: string
+  id_prefix?: string
+  quantity: number
+  max_trials?: number
+  position_method: 'uniform' | 'gaussian' | 'constant' | 'grid'
+  position_params: Record<string, unknown>
+  orientation_method?: 'uniform' | 'gaussian' | 'constant'
+  orientation_params?: Record<string, unknown>
+  controller?: string
+  size?: Vec3
+  movable?: boolean
+  mass?: number
+  radius?: number
+  height?: number
+}
+
 export interface SpeedCommand {
   command: 'speed'
   factor: number
@@ -197,6 +246,10 @@ export type ClientCommand =
   | TerminateCommand
   | FastForwardCommand
   | MoveEntityCommand
+  | AddEntityCommand
+  | RemoveEntityCommand
+  | GetMetadataCommand
+  | DistributeCommand
   | SpeedCommand
   | CustomCommand
 

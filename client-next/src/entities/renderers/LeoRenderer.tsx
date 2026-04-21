@@ -12,7 +12,7 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function LeoRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
+export function LeoRenderer({ entity, selected, ghost, onClick, onDoubleClick, onPointerDown, overrideColor }: EntityRendererProps) {
   const e = entity as LeoEntity
   const { position: p, orientation: q } = e
 
@@ -21,12 +21,15 @@ export function LeoRenderer({ entity, selected, onClick, onDoubleClick, override
   const rays = useMemo(() => e.rays.map(parseRay), [e.rays])
 
   return (
-    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick}>
+    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick} onPointerDown={onPointerDown}>
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={overrideColor ?? (selected ? '#6e8e6e' : '#5a6e5a')}
+          color={overrideColor ?? (ghost ? '#64C8FF' : (selected ? '#6e8e6e' : '#5a6e5a'))}
           metalness={0.05}
           roughness={0.8}
+          transparent={ghost}
+          opacity={ghost ? 0.3 : 1}
+          depthWrite={!ghost}
         />
       </mesh>
 

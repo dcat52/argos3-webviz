@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid } from '../types/protocol'
+import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type Vec3 } from '../types/protocol'
 import { computeFields } from '../lib/computedFields'
 
 function extractDraw(userData: unknown): DrawCommand[] {
@@ -30,11 +30,15 @@ interface ExperimentState_ {
   floorData: FloorColorGrid | null
   userData: unknown
   selectedEntityId: string | null
+  dragEntityId: string | null
   applyBroadcast: (msg: BroadcastMessage) => void
   applySchema: (msg: SchemaMessage) => void
   applyDelta: (msg: DeltaMessage) => void
   applyMessage: (msg: BroadcastMessage | SchemaMessage | DeltaMessage) => void
   selectEntity: (id: string | null) => void
+  startDrag: (id: string) => void
+  endDrag: () => void
+  updateDragPosition: (pos: Vec3) => void
 }
 
 export const useExperimentStore = create<ExperimentState_>((set, get) => ({
@@ -50,6 +54,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   floorData: null,
   userData: undefined,
   selectedEntityId: null,
+  dragEntityId: null,
 
   applyBroadcast: (msg) => {
     const prev = get().entities
@@ -106,6 +111,13 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       }
     }
 
+    // Handle removed entities
+    if (msg.removed) {
+      for (const id of msg.removed) {
+        next.delete(id)
+      }
+    }
+
     const arena = msg.arena ?? get().arena
     set({
       state: msg.state ?? get().state,
@@ -131,4 +143,18 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   selectEntity: (id) => set({ selectedEntityId: id }),
+
+  startDrag: (id) => set({ dragEntityId: id, selectedEntityId: id }),
+
+  endDrag: () => set({ dragEntityId: null }),
+
+  updateDragPosition: (pos) => {
+    const { dragEntityId, entities } = get()
+    if (!dragEntityId) return
+    const entity = entities.get(dragEntityId)
+    if (!entity || !('position' in entity)) return
+    const next = new Map(entities)
+    next.set(dragEntityId, { ...entity, position: pos } as AnyEntity)
+    set({ entities: next })
+  },
 }))

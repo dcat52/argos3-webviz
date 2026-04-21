@@ -60,3 +60,5 @@ icons floating above each robot.
 |----|-------|--------|--------|
 | PN-015 | HealthWebviz + Status Icons | 📋 Needs discussion | TBD |
 | PN-018 | Timeline Scrubber | 📋 Future | 4 hr |
+| PN-019 | Entity Manipulation & Spawning | 📋 INVESTIGATION | 12 hr |
+| PN-020 | Entity LED Rendering (Box/Cylinder) | 📋 Future | TBD |

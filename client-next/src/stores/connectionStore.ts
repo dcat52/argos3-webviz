@@ -5,6 +5,7 @@ import { useExperimentStore } from './experimentStore'
 import { useLogStore } from './logStore'
 import { useRecordingStore } from './recordingStore'
 import { useSettingsStore } from './settingsStore'
+import { useMetadataStore } from './metadataStore'
 import { SPEED_INFINITY_THRESHOLD, SPEED_TRANSITION_DELAY_MS } from '@/lib/defaults'
 
 interface ConnectionState {
@@ -22,6 +23,9 @@ interface ConnectionState {
   fastForward: (steps?: number) => void
   playAtSpeed: (speed: number) => void
   moveEntity: (id: string, pos: Vec3, orient: Quaternion) => void
+  addEntity: (params: Record<string, unknown>) => void
+  removeEntity: (id: string) => void
+  requestMetadata: () => void
 }
 
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
@@ -51,6 +55,9 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
           break
         case 'log':
           useLogStore.getState().addMessages(msg.messages)
+          break
+        case 'metadata':
+          useMetadataStore.getState().applyMetadata(msg as any)
           break
       }
     }
@@ -86,4 +93,10 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   },
   moveEntity: (id, pos, orient) =>
     get().send({ command: 'moveEntity', entity_id: id, position: pos, orientation: orient }),
+  addEntity: (params) =>
+    get().send({ command: 'addEntity', ...params } as any),
+  removeEntity: (id) =>
+    get().send({ command: 'removeEntity', entity_id: id }),
+  requestMetadata: () =>
+    get().send({ command: 'getMetadata' }),
 }))

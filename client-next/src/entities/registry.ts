@@ -4,8 +4,10 @@ import { AnyEntity } from '../types/protocol'
 export interface EntityRendererProps {
   entity: AnyEntity
   selected?: boolean
+  ghost?: boolean
   onClick?: () => void
   onDoubleClick?: () => void
+  onPointerDown?: (e: React.PointerEvent | any) => void
   overrideColor?: string
 }
 

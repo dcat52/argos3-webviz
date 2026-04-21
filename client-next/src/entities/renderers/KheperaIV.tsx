@@ -16,7 +16,7 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function KheperaIV({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
+export function KheperaIV({ entity, selected, ghost, onClick, onDoubleClick, onPointerDown, overrideColor }: EntityRendererProps) {
   const e = entity as KheperaIVEntity
   const { position: p, orientation: q } = e
 
@@ -32,11 +32,11 @@ export function KheperaIV({ entity, selected, onClick, onDoubleClick, overrideCo
   const rays = useMemo(() => e.rays.map(parseRay), [e.rays])
 
   return (
-    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick}>
+    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick} onPointerDown={onPointerDown}>
       {/* Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={overrideColor ?? (selected ? '#5577aa' : '#2a3a4a')}
+          color={overrideColor ?? (ghost ? '#64C8FF' : (selected ? '#5577aa' : '#2a3a4a'))}
           metalness={0.05}
           roughness={0.8}
           clearcoat={0}

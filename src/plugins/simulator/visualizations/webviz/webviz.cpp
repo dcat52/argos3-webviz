@@ -12,6 +12,15 @@
 #include "webviz.h"
 
 #include <unordered_map>
+#include <unordered_set>
+
+/* Entity includes for programmatic construction */
+#include <argos3/plugins/simulator/entities/box_entity.h>
+#include <argos3/plugins/simulator/entities/cylinder_entity.h>
+#include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
+#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
+#include <argos3/core/simulator/entity/embodied_entity.h>
+#include <argos3/core/utility/math/rng.h>
 
 namespace argos {
 
@@ -180,6 +189,9 @@ namespace argos {
           unFFStepCounter = 1;
         }
 
+        /* Drain queued commands before stepping */
+        DrainCommandQueue();
+
         /* Loop for steps (multiple for fast-forward) */
         while (unFFStepCounter > 0 &&  // FF counter
                !m_cSimulator
@@ -242,6 +254,7 @@ namespace argos {
          * we sleep to reduce the number of updates done in
          * "PAUSED"/"INITIALIZED"/"DONE" state
          */
+        DrainCommandQueue();
         BroadcastExperimentState();
         std::this_thread::sleep_for(std::chrono::milliseconds(250));
       }
@@ -321,14 +334,211 @@ namespace argos {
           cNewOrientation.SetW(
             c_json_command["orientation"]["w"].get<float_t>());
 
-          MoveEntity(
-            c_json_command["entity_id"].get<std::string>(),
-            cNewPos,
-            cNewOrientation);
+          EnqueueCommand([this,
+                          strId = c_json_command["entity_id"].get<std::string>(),
+                          cNewPos, cNewOrientation]() {
+            MoveEntity(strId, cNewPos, cNewOrientation);
+          });
 
         } catch (const std::exception& e) {
           LOGERR << "[ERROR] In function MoveEntity: " << e.what() << '\n';
         }
+
+      } else if (strCmd.compare("addEntity") == 0) {
+        try {
+          std::string strType = c_json_command["type"].get<std::string>();
+          std::string strPrefix = c_json_command.value("id_prefix", strType);
+          CVector3 cPos;
+          cPos.SetX(c_json_command["position"]["x"].get<float_t>());
+          cPos.SetY(c_json_command["position"]["y"].get<float_t>());
+          cPos.SetZ(c_json_command["position"]["z"].get<float_t>());
+          CQuaternion cOrient;
+          if (c_json_command.contains("orientation")) {
+            cOrient.SetX(c_json_command["orientation"]["x"].get<float_t>());
+            cOrient.SetY(c_json_command["orientation"]["y"].get<float_t>());
+            cOrient.SetZ(c_json_command["orientation"]["z"].get<float_t>());
+            cOrient.SetW(c_json_command["orientation"]["w"].get<float_t>());
+          }
+
+          EnqueueCommand([this, strType, strPrefix, cPos, cOrient,
+                          cmd = c_json_command]() {
+            std::string strId = GenerateEntityId(strPrefix);
+            CEntity* pcEntity = nullptr;
+            try {
+              if (strType == "box") {
+                CVector3 cSize(
+                  cmd.value("/size/x"_json_pointer, 0.3),
+                  cmd.value("/size/y"_json_pointer, 0.3),
+                  cmd.value("/size/z"_json_pointer, 0.3));
+                bool bMovable = cmd.value("movable", true);
+                Real fMass = cmd.value("mass", 1.0);
+                pcEntity = new CBoxEntity(
+                  strId, cPos, cOrient, bMovable, cSize, fMass);
+              } else if (strType == "cylinder") {
+                Real fRadius = cmd.value("radius", 0.15);
+                Real fHeight = cmd.value("height", 0.5);
+                bool bMovable = cmd.value("movable", true);
+                Real fMass = cmd.value("mass", 1.0);
+                pcEntity = new CCylinderEntity(
+                  strId, cPos, cOrient, bMovable, fRadius, fHeight, fMass);
+              } else if (strType == "foot-bot") {
+                std::string strCtrl = cmd["controller"].get<std::string>();
+                pcEntity = new CFootBotEntity(strId, strCtrl, cPos, cOrient);
+              } else if (strType == "kheperaiv") {
+                std::string strCtrl = cmd["controller"].get<std::string>();
+                pcEntity = new CKheperaIVEntity(strId, strCtrl, cPos, cOrient);
+              } else {
+                LOGERR << "[ERROR] Unknown entity type: " << strType << '\n';
+                return;
+              }
+              m_cSimulator.GetLoopFunctions().AddEntity(*pcEntity);
+              LOG << "[INFO] Entity added: " << strId << '\n';
+            } catch (CARGoSException& ex) {
+              LOGERR << "[ERROR] Failed to add entity " << strId << ": "
+                     << ex.what() << '\n';
+              delete pcEntity;
+            }
+          });
+        } catch (const std::exception& e) {
+          LOGERR << "[ERROR] addEntity: " << e.what() << '\n';
+        }
+
+      } else if (strCmd.compare("removeEntity") == 0) {
+        try {
+          std::string strId = c_json_command["entity_id"].get<std::string>();
+          EnqueueCommand([this, strId]() {
+            try {
+              m_cSimulator.GetLoopFunctions().RemoveEntity(strId);
+              LOG << "[INFO] Entity removed: " << strId << '\n';
+            } catch (CARGoSException& ex) {
+              LOGERR << "[ERROR] Failed to remove entity " << strId << ": "
+                     << ex.what() << '\n';
+            }
+          });
+        } catch (const std::exception& e) {
+          LOGERR << "[ERROR] removeEntity: " << e.what() << '\n';
+        }
+
+      } else if (strCmd.compare("distribute") == 0) {
+        try {
+          std::string strType = c_json_command["type"].get<std::string>();
+          std::string strPrefix = c_json_command.value("id_prefix", strType);
+          UInt32 unQuantity = c_json_command["quantity"].get<UInt32>();
+          UInt32 unMaxTrials = c_json_command.value("max_trials", 100u);
+          auto cmd = c_json_command;
+
+          EnqueueCommand([this, strType, strPrefix, unQuantity, unMaxTrials, cmd]() {
+            UInt32 unPlaced = 0;
+            std::vector<std::string> vecPlacedIds;
+            CRandom::CRNG* pcRNG = CRandom::CreateRNG("argos");
+
+            for (UInt32 i = 0; i < unQuantity; ++i) {
+              bool bPlaced = false;
+              for (UInt32 t = 0; t < unMaxTrials && !bPlaced; ++t) {
+                /* Generate position based on method */
+                CVector3 cPos;
+                std::string strMethod = cmd.value("position_method", "uniform");
+                auto& params = cmd["position_params"];
+                if (strMethod == "uniform") {
+                  cPos.SetX(pcRNG->Uniform(CRange<Real>(
+                    params.value("/min/x"_json_pointer, -2.0),
+                    params.value("/max/x"_json_pointer, 2.0))));
+                  cPos.SetY(pcRNG->Uniform(CRange<Real>(
+                    params.value("/min/y"_json_pointer, -2.0),
+                    params.value("/max/y"_json_pointer, 2.0))));
+                  cPos.SetZ(params.value("/min/z"_json_pointer, 0.0));
+                } else if (strMethod == "gaussian") {
+                  cPos.SetX(pcRNG->Gaussian(
+                    params.value("/std_dev/x"_json_pointer, 1.0),
+                    params.value("/mean/x"_json_pointer, 0.0)));
+                  cPos.SetY(pcRNG->Gaussian(
+                    params.value("/std_dev/y"_json_pointer, 1.0),
+                    params.value("/mean/y"_json_pointer, 0.0)));
+                  cPos.SetZ(params.value("/mean/z"_json_pointer, 0.0));
+                } else if (strMethod == "grid") {
+                  UInt32 cols = params.value("/layout/0"_json_pointer, unQuantity);
+                  UInt32 rows = params.value("/layout/1"_json_pointer, 1u);
+                  Real cx = params.value("/center/x"_json_pointer, 0.0);
+                  Real cy = params.value("/center/y"_json_pointer, 0.0);
+                  Real dx = params.value("/distances/x"_json_pointer, 0.5);
+                  Real dy = params.value("/distances/y"_json_pointer, 0.5);
+                  UInt32 c = i % cols, r = (i / cols) % rows;
+                  cPos.SetX(cx + (c - (cols - 1) / 2.0) * dx);
+                  cPos.SetY(cy + (r - (rows - 1) / 2.0) * dy);
+                  cPos.SetZ(0);
+                } else {
+                  cPos.SetX(params.value("/values/x"_json_pointer, 0.0));
+                  cPos.SetY(params.value("/values/y"_json_pointer, 0.0));
+                  cPos.SetZ(params.value("/values/z"_json_pointer, 0.0));
+                }
+
+                CQuaternion cOrient;
+                std::string strId = GenerateEntityId(strPrefix);
+                CEntity* pcEntity = nullptr;
+                try {
+                  if (strType == "box") {
+                    CVector3 cSize(cmd.value("/size/x"_json_pointer, 0.3),
+                                   cmd.value("/size/y"_json_pointer, 0.3),
+                                   cmd.value("/size/z"_json_pointer, 0.3));
+                    pcEntity = new CBoxEntity(strId, cPos, cOrient,
+                      cmd.value("movable", true), cSize, cmd.value("mass", 1.0));
+                  } else if (strType == "cylinder") {
+                    pcEntity = new CCylinderEntity(strId, cPos, cOrient,
+                      cmd.value("movable", true), cmd.value("radius", 0.15),
+                      cmd.value("height", 0.5), cmd.value("mass", 1.0));
+                  } else if (strType == "foot-bot") {
+                    pcEntity = new CFootBotEntity(strId,
+                      cmd["controller"].get<std::string>(), cPos, cOrient);
+                  } else if (strType == "kheperaiv") {
+                    pcEntity = new CKheperaIVEntity(strId,
+                      cmd["controller"].get<std::string>(), cPos, cOrient);
+                  }
+                  if (pcEntity) {
+                    m_cSimulator.GetLoopFunctions().AddEntity(*pcEntity);
+                    /* Check collision for embodied entities */
+                    CComposableEntity* pcComp = dynamic_cast<CComposableEntity*>(pcEntity);
+                    if (pcComp && pcComp->HasComponent("body")) {
+                      CEmbodiedEntity& cBody = pcComp->GetComponent<CEmbodiedEntity>("body");
+                      if (cBody.IsCollidingWithSomething()) {
+                        m_cSimulator.GetLoopFunctions().RemoveEntity(strId);
+                        continue; /* retry */
+                      }
+                    }
+                    vecPlacedIds.push_back(strId);
+                    bPlaced = true;
+                    ++unPlaced;
+                  }
+                } catch (CARGoSException& ex) {
+                  LOGERR << "[WARN] distribute: failed to place " << strId
+                         << ": " << ex.what() << '\n';
+                  delete pcEntity;
+                }
+              }
+            }
+            LOG << "[INFO] Distributed " << unPlaced << "/" << unQuantity
+                << " " << strType << " entities\n";
+          });
+        } catch (const std::exception& e) {
+          LOGERR << "[ERROR] distribute: " << e.what() << '\n';
+        }
+
+      } else if (strCmd.compare("getMetadata") == 0) {
+        nlohmann::json cMeta;
+        cMeta["type"] = "metadata";
+        cMeta["entity_types"] = {"box", "cylinder", "foot-bot", "kheperaiv"};
+        cMeta["controllers"] = nlohmann::json::array();
+        try {
+          TConfigurationNode& tRoot = m_cSimulator.GetConfigurationRoot();
+          TConfigurationNode& tControllers = GetNode(tRoot, "controllers");
+          TConfigurationNodeIterator itCtrl;
+          for (itCtrl = itCtrl.begin(&tControllers);
+               itCtrl != itCtrl.end(); ++itCtrl) {
+            std::string strCtrlId;
+            GetNodeAttribute(*itCtrl, "id", strCtrlId);
+            cMeta["controllers"].push_back(strCtrlId);
+          }
+        } catch (const std::exception&) {}
+        m_cWebServer->Broadcast(cMeta);
 
       } else {
         /* "command" key has unknown value */
@@ -471,6 +681,9 @@ namespace argos {
     m_bFastForwarding = false;
 
     if (!m_cSimulator.IsExperimentFinished()) {
+      /* Drain queued commands before stepping */
+      DrainCommandQueue();
+
       /* Run one step */
       m_cSimulator.UpdateSpace();
 
@@ -644,6 +857,21 @@ namespace argos {
 
         cStateJson["entities"] = std::move(cDelta);
         m_cPrevEntities = cCurrentEntities;
+
+        /* Detect removed entities */
+        std::unordered_set<std::string> setCurrentIds;
+        for (auto& c : cCurrentEntities) {
+          setCurrentIds.insert(c["id"].get<std::string>());
+        }
+        nlohmann::json cRemoved = nlohmann::json::array();
+        for (auto& [strPrevId, _] : mapPrev) {
+          if (setCurrentIds.find(strPrevId) == setCurrentIds.end()) {
+            cRemoved.push_back(strPrevId);
+          }
+        }
+        if (!cRemoved.empty()) {
+          cStateJson["removed"] = cRemoved;
+        }
       }
     } else {
       /* Legacy full broadcast */
@@ -704,6 +932,34 @@ namespace argos {
 
     /* Send to webserver to broadcast */
     m_cWebServer->Broadcast(cStateJson);
+  }
+
+  /****************************************/
+  /****************************************/
+
+  void CWebviz::EnqueueCommand(std::function<void()> fn) {
+    std::lock_guard<std::mutex> lock(m_mtxCommandQueue);
+    m_vecCommandQueue.push_back(std::move(fn));
+  }
+
+  /****************************************/
+  /****************************************/
+
+  void CWebviz::DrainCommandQueue() {
+    std::vector<std::function<void()>> vecCmds;
+    {
+      std::lock_guard<std::mutex> lock(m_mtxCommandQueue);
+      vecCmds.swap(m_vecCommandQueue);
+    }
+    for (auto& fn : vecCmds) fn();
+  }
+
+  /****************************************/
+  /****************************************/
+
+  std::string CWebviz::GenerateEntityId(const std::string& str_prefix) {
+    UInt32 unIdx = m_mapNextEntityIdx[str_prefix]++;
+    return str_prefix + "_" + std::to_string(unIdx);
   }
 
   /****************************************/
