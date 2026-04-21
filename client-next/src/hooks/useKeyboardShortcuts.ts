@@ -1,12 +1,35 @@
 import { useEffect } from 'react'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
+import { useRecordingStore } from '@/stores/recordingStore'
 import { ExperimentState } from '@/types/protocol'
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return
+
+      const recording = useRecordingStore.getState()
+
+      // Replay-mode shortcuts
+      if (recording.state === 'replaying') {
+        switch (e.code) {
+          case 'Space':
+            e.preventDefault()
+            recording.togglePlayPause()
+            return
+          case 'ArrowLeft':
+            e.preventDefault()
+            recording.seekTo(recording.frameIndex - (e.shiftKey ? 10 : 1))
+            return
+          case 'ArrowRight':
+            e.preventDefault()
+            recording.seekTo(recording.frameIndex + (e.shiftKey ? 10 : 1))
+            return
+        }
+      }
+
+      // Live-connection shortcuts
       const { pause, step, reset, playAtSpeed } = useConnectionStore.getState()
       const { state } = useExperimentStore.getState()
       const isRunning = state === ExperimentState.EXPERIMENT_PLAYING || state === ExperimentState.EXPERIMENT_FAST_FORWARDING

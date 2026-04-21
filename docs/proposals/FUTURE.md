@@ -23,19 +23,13 @@ icons floating above each robot.
 
 ## Future
 
-### PN-017: Multi-Experiment Dashboard
-
-**Goal**: Side-by-side viewports for comparing experiments.
-
-**Effort**: ~4 hrs | Medium complexity
-
----
-
 ### PN-018: Timeline Scrubber / Replay Seek
 
 **Goal**: Scrub through recorded simulation history.
 
-**Effort**: ~4 hrs | Medium complexity
+**Status**: 🟣 VERIFICATION — PR open
+
+**Effort**: ~3.5 hrs | Medium complexity
 **Dependencies**: PN-003
 
 ---
@@ -58,11 +52,11 @@ icons floating above each robot.
 | PN-012 | Configurable Defaults | 2026-04-19 |
 | PN-013 | Floating Panels | 2026-04-19 |
 | PN-014 | Speed Control | 2026-04-19 |
+| PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
 
 ## Summary
 
 | PN | Title | Status | Effort |
 |----|-------|--------|--------|
 | PN-015 | HealthWebviz + Status Icons | 📋 Needs discussion | TBD |
-| PN-017 | Multi-Experiment Dashboard | 📋 Future | 4 hr |
 | PN-018 | Timeline Scrubber | 📋 Future | 4 hr |
