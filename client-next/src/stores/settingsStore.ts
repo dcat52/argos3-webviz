@@ -1,6 +1,8 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import { COLORS, CAMERA, LIMITS, RECORDING, CONNECTION, LIGHTING, SPEED_OPTIONS } from '@/lib/defaults'
+import { APP_MODE } from '@/lib/params'
+import { memoryStorage } from '@/lib/memoryStorage'
 
 interface SpeedOption { value: number; label: string }
 
@@ -70,6 +72,6 @@ export const useSettingsStore = create<SettingsState>()(
       set: (patch) => set(patch),
       reset: () => set(defaults),
     }),
-    { name: 'argos-settings' }
+    { name: 'argos-settings', storage: createJSONStorage(() => APP_MODE === 'viewer' ? memoryStorage : localStorage) }
   )
 )

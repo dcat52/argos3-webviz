@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import { Line } from '@react-three/drei'
 import { EffectComposer, Bloom, SMAA } from '@react-three/postprocessing'
@@ -10,6 +10,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useCameraStore } from '../stores/cameraStore'
 import { useVizConfigStore } from '../stores/vizConfigStore'
 import { useCanvasRef } from '../stores/canvasRefStore'
+import { APP_MODE } from '../lib/params'
 import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
@@ -175,6 +176,8 @@ export function Scene() {
   const pixelRatio = useSettingsStore((s) => s.pixelRatio)
   const fov = useSettingsStore((s) => s.fov)
   const orthographic = useSettingsStore((s) => s.orthographic)
+  const [contextLost, setContextLost] = useState(false)
+  const isViewer = APP_MODE === 'viewer'
 
   return (
     <>
@@ -188,7 +191,14 @@ export function Scene() {
       style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
       shadows={shadows}
       dpr={pixelRatio}
-      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, preserveDrawingBuffer: true }}
+      gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, toneMappingExposure: 1.0, preserveDrawingBuffer: !isViewer }}
+      onCreated={({ gl }) => {
+        gl.domElement.addEventListener('webglcontextlost', (e) => {
+          e.preventDefault()
+          setContextLost(true)
+        })
+        gl.domElement.addEventListener('webglcontextrestored', () => setContextLost(false))
+      }}
     >
       <EnvironmentPreset preset={envPreset} arena={arena} />
 
@@ -213,11 +223,18 @@ export function Scene() {
 
       <SceneContent />
 
-      <EffectComposer multisampling={0}>
-        <Bloom luminanceThreshold={1.0} luminanceSmoothing={0.3} intensity={0.3} />
-        <SMAA />
-      </EffectComposer>
+      {!isViewer && (
+        <EffectComposer multisampling={0}>
+          <Bloom luminanceThreshold={1.0} luminanceSmoothing={0.3} intensity={0.3} />
+          <SMAA />
+        </EffectComposer>
+      )}
     </Canvas>
+    {contextLost && (
+      <div className="absolute inset-0 flex items-center justify-center bg-black/70 text-white text-sm">
+        WebGL context lost — too many viewports?
+      </div>
+    )}
     <ScaleBarOverlay />
     </>
   )
