@@ -1,8 +1,10 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { FieldSchema } from '@/lib/vizEngine'
 import { VIZ_DEFAULTS } from '@/lib/defaults'
 import { vizPresets } from '@/lib/vizPresets'
+import { APP_MODE } from '@/lib/params'
+import { memoryStorage } from '@/lib/memoryStorage'
 
 export interface VizConfig {
   colorBy: { enabled: boolean; field: string; scale: 'linear' | 'categorical'; colorA: string; colorB: string } | null
@@ -68,6 +70,6 @@ export const useVizConfigStore = create<VizConfigStore>()(
           return { config: { ...s.config, ...patch }, hintsApplied: true }
         }),
     }),
-    { name: 'viz-config', partialize: (s) => ({ config: s.config }) }
+    { name: 'viz-config', partialize: (s) => ({ config: s.config }), storage: createJSONStorage(() => APP_MODE === 'viewer' ? memoryStorage : localStorage) }
   )
 )

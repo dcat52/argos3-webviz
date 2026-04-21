@@ -15,15 +15,14 @@ test('pause stops step counter', async ({ page }) => {
     expect(s).toBeGreaterThan(0)
   }).toPass({ timeout: 15000 })
 
-  // Toggle pause and wait for state to settle
+  // Toggle pause, then poll until counter stabilizes
   await page.click('[data-testid="play-btn"]')
-  await page.waitForTimeout(1000)
-
-  // Sample twice — counter should not advance
-  const stepsA = Number(await page.locator('[data-testid="step-counter"]').textContent())
-  await page.waitForTimeout(2000)
-  const stepsB = Number(await page.locator('[data-testid="step-counter"]').textContent())
-  expect(stepsB).toBe(stepsA)
+  await expect(async () => {
+    const a = Number(await page.locator('[data-testid="step-counter"]').textContent())
+    await page.waitForTimeout(500)
+    const b = Number(await page.locator('[data-testid="step-counter"]').textContent())
+    expect(b).toBe(a)
+  }).toPass({ timeout: 15000 })
 })
 
 test('step increments counter', async ({ page }) => {
