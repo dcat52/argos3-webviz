@@ -30,7 +30,10 @@ export function CameraController() {
   const prevPreset = useRef(preset)
   const initialized = useRef(false)
 
-  useEffect(() => { setCameraControlsRef(ref) }, [setCameraControlsRef])
+  useEffect(() => {
+    setCameraControlsRef(ref);
+    (window as any).__cameraControlsRef = ref
+  }, [setCameraControlsRef])
 
   const minDist = useSettingsStore((s) => s.cameraMinDistance)
   const maxDistMult = useSettingsStore((s) => s.cameraMaxDistanceMultiplier)

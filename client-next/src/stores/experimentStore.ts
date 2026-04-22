@@ -59,7 +59,13 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   applyBroadcast: (msg) => {
     const prev = get().entities
     const next = new Map<string, AnyEntity>()
+    const dragId = get().dragEntityId
     for (const entity of msg.entities) {
+      // Keep local position for entity being dragged
+      if (dragId && entity.id === dragId) {
+        const local = prev.get(dragId)
+        if (local) { next.set(entity.id, { ...entity, position: local.position } as AnyEntity); continue }
+      }
       next.set(entity.id, entity)
     }
     set({
@@ -144,9 +150,17 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
 
   selectEntity: (id) => set({ selectedEntityId: id }),
 
-  startDrag: (id) => set({ dragEntityId: id, selectedEntityId: id }),
+  startDrag: (id) => {
+    const ref = (window as any).__cameraControlsRef
+    if (ref?.current) ref.current.enabled = false
+    set({ dragEntityId: id, selectedEntityId: id })
+  },
 
-  endDrag: () => set({ dragEntityId: null }),
+  endDrag: () => {
+    const ref = (window as any).__cameraControlsRef
+    if (ref?.current) ref.current.enabled = true
+    set({ dragEntityId: null })
+  },
 
   updateDragPosition: (pos) => {
     const { dragEntityId, entities } = get()

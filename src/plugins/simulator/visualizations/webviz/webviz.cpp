@@ -535,22 +535,7 @@ namespace argos {
         }
 
       } else if (strCmd.compare("getMetadata") == 0) {
-        nlohmann::json cMeta;
-        cMeta["type"] = "metadata";
-        cMeta["entity_types"] = {"box", "cylinder", "foot-bot", "kheperaiv"};
-        cMeta["controllers"] = nlohmann::json::array();
-        try {
-          TConfigurationNode& tRoot = m_cSimulator.GetConfigurationRoot();
-          TConfigurationNode& tControllers = GetNode(tRoot, "controllers");
-          TConfigurationNodeIterator itCtrl;
-          for (itCtrl = itCtrl.begin(&tControllers);
-               itCtrl != itCtrl.end(); ++itCtrl) {
-            std::string strCtrlId;
-            GetNodeAttribute(*itCtrl, "id", strCtrlId);
-            cMeta["controllers"].push_back(strCtrlId);
-          }
-        } catch (const std::exception&) {}
-        m_cWebServer->Broadcast(cMeta);
+        /* Metadata is embedded in every broadcast — no separate response needed */
 
       } else {
         /* "command" key has unknown value */
@@ -926,6 +911,24 @@ namespace argos {
 
     /* Number of step from the simulator */
     cStateJson["steps"] = m_cSpace.GetSimulationClock();
+
+    /* Metadata: available entity types and controllers */
+    cStateJson["entity_types"] = {"box", "cylinder", "foot-bot", "kheperaiv"};
+    {
+      nlohmann::json cControllers = nlohmann::json::array();
+      try {
+        TConfigurationNode& tRoot = m_cSimulator.GetConfigurationRoot();
+        TConfigurationNode& tControllers = GetNode(tRoot, "controllers");
+        TConfigurationNodeIterator itCtrl;
+        for (itCtrl = itCtrl.begin(&tControllers);
+             itCtrl != itCtrl.end(); ++itCtrl) {
+          std::string strCtrlId;
+          GetNodeAttribute(*itCtrl, "id", strCtrlId);
+          cControllers.push_back(strCtrlId);
+        }
+      } catch (const std::exception&) {}
+      cStateJson["controllers"] = cControllers;
+    }
 
     /* Real-time ratio: how fast sim runs vs wall clock */
     if (m_bFastForwarding) {

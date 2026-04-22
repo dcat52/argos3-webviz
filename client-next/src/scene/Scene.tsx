@@ -15,6 +15,7 @@ import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
 import { SelectionRing } from './SelectionRing'
+import { useDrag } from '../hooks/useDrag'
 import { FPSCounter } from './FPSCounter'
 import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
@@ -90,11 +91,13 @@ function GlCapture() {
 const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 
 function SceneEntities() {
-  const { entities, selectedEntityId, selectEntity } = useExperimentStore(
-    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
+  const { entities, selectedEntityId, selectEntity, startDrag } = useExperimentStore(
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity, startDrag: s.startDrag }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
   const colorMap = useColorByMap()
+
+  useDrag()
 
   const handleDoubleClick = useCallback((entity: AnyEntity) => {
     if ('position' in entity) {
@@ -113,12 +116,13 @@ function SceneEntities() {
       <InstancedEntities colorMap={colorMap} />
       {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
-          <group key={entity.id}>
+          <group key={entity.id} name={entity.id}>
             <EntityRenderer
               entity={entity}
               selected={entity.id === selectedEntityId}
               onClick={() => selectEntity(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
+              onPointerDown={(e: any) => { e.stopPropagation(); startDrag(entity.id) }}
               overrideColor={colorMap.get(entity.id)}
             />
             {entity.id === selectedEntityId && (

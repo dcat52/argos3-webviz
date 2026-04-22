@@ -43,7 +43,12 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       channels: ['broadcasts', 'events', 'logs'],
     })
 
-    conn.onStatusChange = (status) => set({ status })
+    conn.onStatusChange = (status) => {
+      set({ status })
+      if (status === 'connected') {
+        get().requestMetadata()
+      }
+    }
 
     conn.onMessage = (msg) => {
       switch (msg.type) {
@@ -52,6 +57,13 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         case 'delta':
           useExperimentStore.getState().applyMessage(msg)
           if (msg.type === 'broadcast') useRecordingStore.getState().captureFrame(msg)
+          // Extract metadata from broadcast/schema messages
+          if ('controllers' in (msg as any) && 'entity_types' in (msg as any)) {
+            const m = msg as any
+            if (!useMetadataStore.getState().loaded) {
+              useMetadataStore.getState().applyMetadata(m)
+            }
+          }
           break
         case 'log':
           useLogStore.getState().addMessages(msg.messages)

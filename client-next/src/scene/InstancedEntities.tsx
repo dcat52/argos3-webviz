@@ -66,6 +66,13 @@ function InstancedGroup({ type, entities, colorMap }: { type: string; entities: 
   const idxMap = useRef<BaseEntity[]>([])
   useEffect(() => { idxMap.current = instanced }, [instanced])
 
+  // Expose entity IDs on mesh userData for drag raycasting
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.userData.entityIds = instanced.map((e) => e.id)
+    }
+  }, [instanced])
+
   return (
     <>
       <instancedMesh

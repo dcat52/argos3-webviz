@@ -3,27 +3,84 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useConnectionStore } from '@/stores/connectionStore'
-import { useCameraStore } from '@/stores/cameraStore'
 
 export function useDrag() {
-  const { camera, gl } = useThree()
-  const dragEntityId = useExperimentStore((s) => s.dragEntityId)
+  const { camera, gl, scene } = useThree()
   const groundPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), [])
+  const raycaster = useMemo(() => new THREE.Raycaster(), [])
 
   useEffect(() => {
-    if (!dragEntityId) return
-
     const canvas = gl.domElement
-    const cameraRef = useCameraStore.getState().cameraControlsRef
-    if (cameraRef?.current) cameraRef.current.enabled = false
+    let dragging = false
+    let dragId: string | null = null
+    let ctrlHeld = false
 
-    const onMove = (e: PointerEvent) => {
+    const camRef = () => (window as any).__cameraControlsRef?.current
+
+    const getMouseNDC = (e: PointerEvent | MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
-      const mouse = new THREE.Vector2(
+      return new THREE.Vector2(
         ((e.clientX - rect.left) / rect.width) * 2 - 1,
         -((e.clientY - rect.top) / rect.height) * 2 + 1
       )
-      const raycaster = new THREE.Raycaster()
+    }
+
+    const findEntityId = (hits: THREE.Intersection[]): string | null => {
+      const entities = useExperimentStore.getState().entities
+      for (const hit of hits) {
+        if (hit.instanceId !== undefined) {
+          const ids = (hit.object as any).userData?.entityIds as string[] | undefined
+          if (ids?.[hit.instanceId] && entities.has(ids[hit.instanceId])) return ids[hit.instanceId]
+        }
+        let obj: THREE.Object3D | null = hit.object
+        while (obj) {
+          if (obj.name && entities.has(obj.name)) return obj.name
+          obj = obj.parent
+        }
+      }
+      return null
+    }
+
+    // Ctrl key toggles camera freeze
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Control' && !ctrlHeld) {
+        ctrlHeld = true
+        const c = camRef()
+        if (c) c.enabled = false
+        canvas.style.cursor = 'crosshair'
+      }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control') {
+        ctrlHeld = false
+        if (!dragging) {
+          const c = camRef()
+          if (c) c.enabled = true
+          canvas.style.cursor = ''
+        }
+      }
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0 || !ctrlHeld) return
+
+      const mouse = getMouseNDC(e)
+      raycaster.setFromCamera(mouse, camera)
+      const hits = raycaster.intersectObjects(scene.children, true)
+      const id = findEntityId(hits)
+
+      if (id) {
+        dragId = id
+        dragging = true
+        useExperimentStore.getState().startDrag(id)
+        e.stopPropagation()
+        e.preventDefault()
+      }
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      if (!dragging || !dragId) return
+      const mouse = getMouseNDC(e)
       raycaster.setFromCamera(mouse, camera)
       const hit = new THREE.Vector3()
       if (raycaster.ray.intersectPlane(groundPlane, hit)) {
@@ -31,28 +88,38 @@ export function useDrag() {
       }
     }
 
-    const onUp = () => {
+    const onPointerUp = () => {
+      if (!dragging || !dragId) return
       const store = useExperimentStore.getState()
-      const entity = store.entities.get(dragEntityId)
+      const entity = store.entities.get(dragId)
       if (entity && 'position' in entity && 'orientation' in entity) {
-        useConnectionStore.getState().moveEntity(
-          dragEntityId,
-          entity.position,
-          entity.orientation
-        )
+        useConnectionStore.getState().moveEntity(dragId, entity.position, entity.orientation)
       }
       store.endDrag()
-      const ref = useCameraStore.getState().cameraControlsRef
-      if (ref?.current) ref.current.enabled = true
+      dragging = false
+      dragId = null
+      if (!ctrlHeld) {
+        const c = camRef()
+        if (c) c.enabled = true
+        canvas.style.cursor = ''
+      }
     }
 
-    canvas.addEventListener('pointermove', onMove)
-    canvas.addEventListener('pointerup', onUp)
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    canvas.addEventListener('pointerdown', onPointerDown, true)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerUp)
+
     return () => {
-      canvas.removeEventListener('pointermove', onMove)
-      canvas.removeEventListener('pointerup', onUp)
-      const ref = useCameraStore.getState().cameraControlsRef
-      if (ref?.current) ref.current.enabled = true
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      canvas.removeEventListener('pointerdown', onPointerDown, true)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      const c = camRef()
+      if (c) c.enabled = true
+      canvas.style.cursor = ''
     }
-  }, [dragEntityId, camera, gl, groundPlane])
+  }, [camera, gl, scene, groundPlane, raycaster])
 }
