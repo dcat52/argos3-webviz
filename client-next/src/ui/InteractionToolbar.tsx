@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useInteractionStore, type InteractionMode } from '@/stores/interactionStore'
+import { useExperimentStore } from '@/stores/experimentStore'
 import { usePlacementStore } from '@/stores/placementStore'
 
 const MODES: { mode: InteractionMode; icon: string; label: string; shortcut: string }[] = [
@@ -16,29 +17,29 @@ export function InteractionToolbar() {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
+
+      // E toggles edit mode
       if (e.key === 'e' || e.key === 'E') { editing ? exitEditing() : enterEditing(); return }
+
+      // ESC: deselect all, cancel placement, exit edit mode
+      if (e.key === 'Escape') {
+        useExperimentStore.getState().selectEntity(null)
+        usePlacementStore.getState().cancelPlacement()
+        if (editing) exitEditing()
+        return
+      }
+
+      // Mode shortcuts only when editing
       if (!editing) return
-      if (e.key === 'v' || e.key === 'V') { setMode('select') }
+      if (e.key === 'v' || e.key === 'V') setMode('select')
       else if (e.key === 'p' || e.key === 'P') setMode('place')
       else if (e.key === 'd' || e.key === 'D') setMode('distribute')
-      else if (e.key === 'Escape') { usePlacementStore.getState().cancelPlacement(); exitEditing() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [editing, setMode, enterEditing, exitEditing])
 
-  // Toggle button (always visible)
-  if (!editing) {
-    return (
-      <button
-        title="Entity Edit Mode (E)"
-        className="absolute top-3 left-1/2 -translate-x-1/2 z-50 bg-card/80 backdrop-blur border rounded-lg shadow px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-card transition-colors"
-        onClick={enterEditing}
-      >
-        ✏️ Edit Entities (E)
-      </button>
-    )
-  }
+  if (!editing) return null
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex items-center gap-0.5 bg-card/90 backdrop-blur border rounded-lg shadow-lg px-1 py-1">
