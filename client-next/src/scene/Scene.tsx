@@ -15,6 +15,7 @@ import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
 import { SelectionRing } from './SelectionRing'
+import { GhostPreview } from './GhostPreview'
 import { useDrag } from '../hooks/useDrag'
 import { FPSCounter } from './FPSCounter'
 import { EntityLinks } from './EntityLinks'
@@ -114,6 +115,7 @@ function SceneEntities() {
   return (
     <>
       <InstancedEntities colorMap={colorMap} />
+      <GhostPreview />
       {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
           <group key={entity.id} name={entity.id}>

@@ -219,16 +219,16 @@ Verify these before starting. If any are false, revisit the design.
 
 ## Done When
 
-- [ ] Drag-to-move: click-drag an entity in the viewport → entity moves → server confirms new position
-- [ ] Spawn: select entity type from palette → click ground to place → entity appears in simulation
-- [ ] Spawn robot: select foot-bot → pick controller from dropdown → place → robot runs controller
-- [ ] Delete: right-click entity → delete → entity removed from simulation
-- [ ] Distribute: configure type/quantity/method/bounds → see ghost preview → commit → entities appear
-- [ ] Ghost preview: adjusting distribute params updates ghost positions in real-time without server round-trip
-- [ ] Metadata: client receives available entity types and controller IDs from server on connect
-- [ ] Camera controls don't interfere with entity dragging
-- [ ] Existing entity selection, fly-to, and rendering still work
-- [ ] User function hooks: EntityMoved called when entity is dragged
+- [x] Drag-to-move: Ctrl+hold freezes camera, click-drag entity → entity moves → server confirms new position
+- [ ] Spawn: select entity type from palette → click ground to place → entity appears in simulation (currently spawns at computed position, not click-to-place)
+- [x] Spawn robot: select foot-bot → pick controller from dropdown → spawn → robot runs controller
+- [x] Delete: select entity → delete button → entity removed from simulation
+- [ ] Distribute: configure type/quantity/method/bounds → see ghost preview → commit → entities appear (backend done, UI panel not yet)
+- [ ] Ghost preview: adjusting distribute params updates ghost positions in real-time without server round-trip (renderer support done, UI not wired)
+- [x] Metadata: client receives available entity types and controller IDs from server on connect
+- [x] Camera controls don't interfere with entity dragging (Ctrl+hold gating)
+- [x] Existing entity selection, fly-to, and rendering still work
+- [ ] User function hooks: EntityMoved called when entity is dragged (hooks defined, not yet called from handlers)
 
 ## Verification Strategy
 
@@ -348,3 +348,36 @@ Resolution: `StepExperiment()` drains the command queue before calling `UpdateSp
 | 2026-04-21 | Critique: found 10 issues (2 critical, 4 major, 4 minor). Thread safety requires command queue infrastructure. Delta protocol doesn't handle entity removal. Ghost preview RNG replication dropped in favor of approximate preview. Effort revised to ~20h. All issues resolved. | 🔍 CRITIQUE |
 | 2026-04-21 | Design doc written: command queue, delta removal, drag-to-move, spawn/delete, distribute with ghost preview, user function hooks. Implementation order: Infra → A → B → C. | 🟡 DESIGN |
 | 2026-04-21 | Design critique: 10 issues (2 critical, 4 major, 4 minor). Fixed ghost transparency (ghost prop instead of rgba), SendToClient (broadcast metadata), instanced drag (add onPointerDown to InstancedGroup), invisible plane (use DOM events + raycaster), ID generation (counter map), distribute atomicity (keep-what-succeeded + response). All resolved. | 🔍 CRITIQUE |
+| 2026-04-21 | Full implementation: C++ command queue, addEntity/removeEntity/distribute/getMetadata handlers, delta removal, user function hooks. Client: protocol types, stores, all 7 renderers updated, useDrag hook, SpawnPalette, distribute algorithm. 87 tests pass. C++ compiles with argos.sif. | 🔵 IMPLEMENTATION |
+| 2026-04-21 | Live testing with ARGoS3 via apptainer. End-to-end spawn/delete verified. Fixed pre-existing build issues (recorder namespace, GetBodyColor guard, loop_functions include). | 🟣 VERIFICATION |
+| 2026-04-21 | UI wiring: Ctrl+hold freezes camera for drag-to-move. SpawnPalette with center/random/grid modes + quantity slider. Deconflicted spawn positions. Metadata embedded in broadcasts. Instanced mesh entityIds for drag raycasting. Broadcast suppression during drag (no snap-back). | 🟣 VERIFICATION |
+
+## Known Limitations & Future Work
+
+### Spawn Parameters Not Yet Exposed in UI
+- **Box**: size (x/y/z), color
+- **Cylinder**: radius, height, color
+- **All**: movable toggle, mass
+- These are all supported by the C++ handlers but need UI inputs (collapsible "Advanced" section)
+
+### Orientation
+- All entities spawn with identity orientation (0,0,0,1)
+- Robots: facing direction matters (forward movement direction)
+- Asymmetric shapes: rotation matters visually
+- **Needed**: random heading option on spawn, manual rotation handle after placement
+
+### Entity-Specific Parameters
+- Robots: RAB range, sensor configs, initial battery level
+- Controller-specific initial state/variables
+- Physics engine selection (dynamics2d vs dynamics3d)
+- These require the full XML-based entity init path, not the simplified programmatic constructors
+
+### Click-to-Place with Ghost Preview
+- Scene interaction mode: ghost entity follows cursor, click to confirm, ESC to cancel
+- Ghost rendering infrastructure exists (all renderers support `ghost` prop with transparent materials)
+- Needs: placement mode state machine, ground plane click handler, preview component
+
+### Distribute Panel
+- Client-side `distribute.ts` algorithm exists (uniform/gaussian/grid/constant with seedable PRNG)
+- C++ server-side distribute handler exists with collision retry
+- Needs: DistributePanel UI component, ghost preview integration, commit flow

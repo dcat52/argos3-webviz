@@ -3,6 +3,7 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useConnectionStore } from '@/stores/connectionStore'
+import { usePlacementStore } from '@/stores/placementStore'
 
 export function useDrag() {
   const { camera, gl, scene } = useThree()
@@ -25,6 +26,13 @@ export function useDrag() {
       )
     }
 
+    const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
+      const mouse = getMouseNDC(e)
+      raycaster.setFromCamera(mouse, camera)
+      const hit = new THREE.Vector3()
+      return raycaster.ray.intersectPlane(groundPlane, hit) ? hit : null
+    }
+
     const findEntityId = (hits: THREE.Intersection[]): string | null => {
       const entities = useExperimentStore.getState().entities
       for (const hit of hits) {
@@ -41,8 +49,48 @@ export function useDrag() {
       return null
     }
 
-    // Ctrl key toggles camera freeze
+    // --- Placement mode handlers ---
+    const onPlacementMove = (e: PointerEvent) => {
+      const placement = usePlacementStore.getState()
+      if (!placement.active) return
+      const hit = groundHit(e)
+      if (hit) placement.updateCursor({ x: hit.x, y: hit.y, z: 0 })
+    }
+
+    const onPlacementClick = (e: MouseEvent) => {
+      const placement = usePlacementStore.getState()
+      if (!placement.active || e.button !== 0) return
+
+      const config = placement.config
+      const pos = placement.confirmPlacement()
+      if (pos && config) {
+        useConnectionStore.getState().addEntity({
+          type: config.type,
+          id_prefix: config.id_prefix ?? config.type,
+          position: pos,
+          orientation: { x: 0, y: 0, z: 0, w: 1 },
+          controller: config.controller,
+          size: config.size,
+          movable: config.movable,
+          mass: config.mass,
+          radius: config.radius,
+          height: config.height,
+        })
+      }
+      e.stopPropagation()
+      e.preventDefault()
+    }
+
+    const onPlacementEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && usePlacementStore.getState().active) {
+        usePlacementStore.getState().cancelPlacement()
+        canvas.style.cursor = ''
+      }
+    }
+
+    // --- Ctrl+drag handlers ---
     const onKeyDown = (e: KeyboardEvent) => {
+      if (usePlacementStore.getState().active) return
       if (e.key === 'Control' && !ctrlHeld) {
         ctrlHeld = true
         const c = camRef()
@@ -62,6 +110,9 @@ export function useDrag() {
     }
 
     const onPointerDown = (e: PointerEvent) => {
+      // Placement mode takes priority
+      if (usePlacementStore.getState().active) return
+
       if (e.button !== 0 || !ctrlHeld) return
 
       const mouse = getMouseNDC(e)
@@ -79,11 +130,12 @@ export function useDrag() {
     }
 
     const onPointerMove = (e: PointerEvent) => {
+      // Placement cursor tracking
+      onPlacementMove(e)
+
       if (!dragging || !dragId) return
-      const mouse = getMouseNDC(e)
-      raycaster.setFromCamera(mouse, camera)
-      const hit = new THREE.Vector3()
-      if (raycaster.ray.intersectPlane(groundPlane, hit)) {
+      const hit = groundHit(e)
+      if (hit) {
         useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
       }
     }
@@ -105,18 +157,30 @@ export function useDrag() {
       }
     }
 
+    // Subscribe to placement mode changes for cursor style
+    const unsub = usePlacementStore.subscribe((state) => {
+      canvas.style.cursor = state.active ? 'copy' : ''
+      const c = camRef()
+      if (c) c.enabled = !state.active
+    })
+
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
+    window.addEventListener('keydown', onPlacementEsc)
     canvas.addEventListener('pointerdown', onPointerDown, true)
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
+    canvas.addEventListener('click', onPlacementClick, true)
 
     return () => {
+      unsub()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
+      window.removeEventListener('keydown', onPlacementEsc)
       canvas.removeEventListener('pointerdown', onPointerDown, true)
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
+      canvas.removeEventListener('click', onPlacementClick, true)
       const c = camRef()
       if (c) c.enabled = true
       canvas.style.cursor = ''

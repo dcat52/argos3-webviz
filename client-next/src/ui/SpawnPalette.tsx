@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react'
 import { useMetadataStore } from '@/stores/metadataStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
+import { usePlacementStore } from '@/stores/placementStore'
 import type { Vec3 } from '@/types/protocol'
 
 interface SpawnConfig {
@@ -15,7 +16,7 @@ interface SpawnConfig {
   id_prefix?: string
 }
 
-type PlacementMode = 'center' | 'random' | 'grid'
+type PlacementMode = 'click' | 'center' | 'random' | 'grid'
 
 const ENTITY_DEFAULTS: Record<string, Partial<SpawnConfig>> = {
   'box': { size: { x: 0.3, y: 0.3, z: 0.3 }, movable: true, mass: 1.0 },
@@ -69,8 +70,9 @@ export function SpawnPalette() {
   const [selectedType, setSelectedType] = useState('')
   const [controller, setController] = useState('')
   const [prefix, setPrefix] = useState('')
-  const [mode, setMode] = useState<PlacementMode>('center')
+  const [mode, setMode] = useState<PlacementMode>('click')
   const [quantity, setQuantity] = useState(1)
+  const placementActive = usePlacementStore((s) => s.active)
 
   const isRobot = selectedType === 'foot-bot' || selectedType === 'kheperaiv'
   const needsController = isRobot && controllers.length > 0
@@ -85,6 +87,17 @@ export function SpawnPalette() {
       orientation: { x: 0, y: 0, z: 0, w: 1 },
       controller: needsController ? controller : undefined,
       ...ENTITY_DEFAULTS[selectedType],
+    }
+
+    // Click-to-place mode: enter placement, ghost follows cursor
+    if (mode === 'click') {
+      usePlacementStore.getState().startPlacement({
+        type: selectedType,
+        controller: needsController ? controller : undefined,
+        id_prefix: prefix || selectedType,
+        ...ENTITY_DEFAULTS[selectedType],
+      })
+      return
     }
 
     const positions: Vec3[] = []
@@ -130,32 +143,43 @@ export function SpawnPalette() {
       <input className="bg-background border rounded px-2 py-1 text-sm" placeholder="ID prefix (optional)" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
 
       <div className="flex gap-1">
-        {(['center', 'random', 'grid'] as PlacementMode[]).map((m) => (
+        {(['click', 'center', 'random', 'grid'] as PlacementMode[]).map((m) => (
           <button
             key={m}
-            className={`flex-1 rounded px-2 py-1 text-xs capitalize ${mode === m ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+            className={`flex-1 rounded px-1.5 py-1 text-xs capitalize ${mode === m ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
             onClick={() => setMode(m)}
-          >{m}</button>
+          >{m === 'click' ? '📍' : m}</button>
         ))}
       </div>
 
-      <div className="flex items-center gap-2">
-        <label className="text-xs text-muted-foreground">Qty</label>
-        <input
-          type="range" min={1} max={50} value={quantity}
-          className="flex-1"
-          onChange={(e) => setQuantity(Number(e.target.value))}
-        />
-        <span className="text-xs font-mono w-6 text-right">{quantity}</span>
-      </div>
+      {mode !== 'click' && (
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-muted-foreground">Qty</label>
+          <input
+            type="range" min={1} max={50} value={quantity}
+            className="flex-1"
+            onChange={(e) => setQuantity(Number(e.target.value))}
+          />
+          <span className="text-xs font-mono w-6 text-right">{quantity}</span>
+        </div>
+      )}
 
-      <button
-        className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50"
-        disabled={!selectedType || (needsController && !controller)}
-        onClick={handleSpawn}
-      >
-        Spawn {quantity > 1 ? `${quantity}×` : ''} {selectedType || '...'}
-      </button>
+      {placementActive ? (
+        <button
+          className="bg-muted rounded px-2 py-1.5 text-xs font-medium"
+          onClick={() => usePlacementStore.getState().cancelPlacement()}
+        >
+          Cancel placement (ESC)
+        </button>
+      ) : (
+        <button
+          className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50"
+          disabled={!selectedType || (needsController && !controller)}
+          onClick={handleSpawn}
+        >
+          {mode === 'click' ? `Place ${selectedType || '...'}` : `Spawn ${quantity > 1 ? `${quantity}×` : ''} ${selectedType || '...'}`}
+        </button>
+      )}
     </div>
   )
 }
