@@ -387,6 +387,44 @@ Resolution: `StepExperiment()` drains the command queue before calling `UpdateSp
 - Toolbar appears contextually when spawn palette is active
 - Consider: right-click context menu for entity-specific actions (delete, duplicate, inspect)
 
+### UX: Next Iteration Design Notes
+
+**Right-click context menu**
+- Right-click entity → Delete / Duplicate / Copy Position
+- Right-click ground → Spawn Here (opens type picker inline)
+- Clean, discoverable, no mode switching needed
+- Implementation: R3F `onContextMenu` event + floating menu component
+
+**Rotation handle**
+- Start simple: orientation input in sidebar inspector (angle slider or x/y/z inputs)
+- Later: visual gizmo ring around selected entity for drag-to-rotate
+- Gizmo adds complexity — defer until basic rotation input works
+- Need to send `moveEntity` with updated orientation to server
+
+**Multi-select**
+- Shift+click to add/remove from selection (viewport and sidebar list)
+- Box select: click-drag on empty ground draws selection rectangle
+- Bulk operations on selection: delete all, move as group (ctrl+drag moves all)
+- Store: `selectedEntityIds: Set<string>` instead of single `selectedEntityId`
+- Sidebar: highlight all selected, show count, bulk action buttons
+
+**Spawn feedback**
+- Server returns success/failure per addEntity command
+- Success: brief green flash on entity mesh (emissive pulse)
+- Failure: red flash + toast notification (collision, out of bounds, invalid controller)
+- Requires: response message type from server per command, not just broadcast
+
+**Toolbar architecture**
+- Top toolbar = mode/workflow (what am I doing?)
+- Sidebar = configuration (what am I spawning?)
+- Floating sub-toolbar = contextual params (distribute params, place mode entity type)
+- Place mode could get a small floating bar showing current entity type + change dropdown
+- This pattern (contextual floating bars) scales well — each mode gets its own sub-toolbar
+
+**Not pursuing**
+- Undo/redo: too complex with sim backend, state diverges. User can delete/re-place.
+- Snap-to-grid: continuous world, not needed. Could add later as optional toggle if requested.
+
 ### Distribute Panel
 - Client-side `distribute.ts` algorithm exists (uniform/gaussian/grid/constant with seedable PRNG)
 - C++ server-side distribute handler exists with collision retry
