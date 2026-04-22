@@ -16,7 +16,7 @@ export function useDrag() {
     let dragId: string | null = null
     let ctrlHeld = false
 
-    const camRef = () => (window as any).__cameraControlsRef?.current
+    const camRef = () => (globalThis as any).__cameraControlsRef?.current
 
     const getMouseNDC = (e: PointerEvent | MouseEvent) => {
       const rect = canvas.getBoundingClientRect()
@@ -62,12 +62,12 @@ export function useDrag() {
       if (!placement.active || e.button !== 0) return
 
       const config = placement.config
-      const pos = placement.confirmPlacement()
-      if (pos && config) {
+      const hit = groundHit(e as any)
+      if (hit && config) {
         useConnectionStore.getState().addEntity({
           type: config.type,
           id_prefix: config.id_prefix ?? config.type,
-          position: pos,
+          position: { x: hit.x, y: hit.y, z: 0 },
           orientation: { x: 0, y: 0, z: 0, w: 1 },
           controller: config.controller,
           size: config.size,
@@ -76,6 +76,7 @@ export function useDrag() {
           radius: config.radius,
           height: config.height,
         })
+        // Stay in placement mode for multi-click
       }
       e.stopPropagation()
       e.preventDefault()

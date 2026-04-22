@@ -32,7 +32,7 @@ export function CameraController() {
 
   useEffect(() => {
     setCameraControlsRef(ref);
-    (window as any).__cameraControlsRef = ref
+    (globalThis as any).__cameraControlsRef = ref
   }, [setCameraControlsRef])
 
   const minDist = useSettingsStore((s) => s.cameraMinDistance)

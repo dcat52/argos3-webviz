@@ -51,6 +51,7 @@ describe('delta removal handling', () => {
 
 describe('drag state', () => {
   beforeEach(() => {
+    (globalThis as any).__cameraControlsRef = { current: { enabled: true } }
     useExperimentStore.setState({
       entities: new Map([
         ['b0', { type: 'box', id: 'b0', position: { x: 0, y: 0, z: 0 }, orientation: { x: 0, y: 0, z: 0, w: 1 }, scale: { x: 0.3, y: 0.3, z: 0.3 }, is_movable: true } as any],
