@@ -58,6 +58,7 @@ function gridPositions(count: number, spacing: number): Vec3[] {
 export function SpawnPalette() {
   const { entityTypes, controllers, loaded } = useMetadataStore()
   const interactionMode = useInteractionStore((s) => s.mode)
+  const editing = useInteractionStore((s) => s.editing)
   const [selectedType, setSelectedType] = useState('')
   const [controller, setController] = useState('')
   const [prefix, setPrefix] = useState('')
@@ -156,14 +157,14 @@ export function SpawnPalette() {
       <input className="bg-background border rounded px-2 py-1 text-sm" placeholder="ID prefix (optional)" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
 
       {/* Place mode: just show status */}
-      {interactionMode === 'place' && (
+      {editing && interactionMode === 'place' && (
         <div className="text-xs text-center py-2 text-muted-foreground">
           {placementActive ? '📍 Click viewport to place · ESC to exit' : 'Select a type above, then press P or click 📍 in toolbar'}
         </div>
       )}
 
       {/* Distribute mode: show params + commit button */}
-      {interactionMode === 'distribute' && (
+      {editing && interactionMode === 'distribute' && (
         <>
           <div className="flex flex-col gap-1.5 bg-muted/50 rounded p-2">
             <div className="flex gap-1">
@@ -201,7 +202,7 @@ export function SpawnPalette() {
       )}
 
       {/* Select mode: batch spawn options */}
-      {interactionMode === 'select' && (
+      {(!editing || interactionMode === 'select') && (
         <>
           <div className="flex gap-1">
             {(['single', 'center', 'random', 'grid'] as BatchMode[]).map((m) => (
