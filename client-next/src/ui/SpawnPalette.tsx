@@ -69,44 +69,56 @@ export function SpawnPalette() {
   const [quantity, setQuantity] = useState(1)
   const placementActive = usePlacementStore((s) => s.active)
 
-  // Distribute params
+  // Distribute params: center ± range
   const [distMethod, setDistMethod] = useState<DistMethod>('uniform')
-  const [distMinX, setDistMinX] = useState(-2)
-  const [distMinY, setDistMinY] = useState(-2)
-  const [distMaxX, setDistMaxX] = useState(2)
-  const [distMaxY, setDistMaxY] = useState(2)
+  const [distCenterX, setDistCenterX] = useState(0)
+  const [distCenterY, setDistCenterY] = useState(0)
+  const [distRangeX, setDistRangeX] = useState(2)
+  const [distRangeY, setDistRangeY] = useState(2)
   const [distSpacing, setDistSpacing] = useState(0.5)
+  const [pickingCenter, setPickingCenter] = useState(false)
 
   const isRobot = selectedType === 'foot-bot' || selectedType === 'kheperaiv'
   const needsController = isRobot && controllers.length > 0
 
+  // Listen for center pick from placement store
+  useEffect(() => {
+    if (!pickingCenter) return
+    const unsub = usePlacementStore.subscribe((state) => {
+      if (state.cursorPos) {
+        setDistCenterX(+state.cursorPos.x.toFixed(2))
+        setDistCenterY(+state.cursorPos.y.toFixed(2))
+      }
+    })
+    return unsub
+  }, [pickingCenter])
+
   // Generate distribute preview positions
   const distPreview = useMemo(() => {
     if (mode !== 'distribute' || !selectedType) return []
+    const cx = distCenterX, cy = distCenterY
+    const rx = distRangeX, ry = distRangeY
     try {
       if (distMethod === 'uniform') {
         return generatePositions('uniform', {
-          min: { x: distMinX, y: distMinY, z: 0 },
-          max: { x: distMaxX, y: distMaxY, z: 0 },
+          min: { x: cx - rx, y: cy - ry, z: 0 },
+          max: { x: cx + rx, y: cy + ry, z: 0 },
         }, quantity, 42)
       } else if (distMethod === 'gaussian') {
-        const cx = (distMinX + distMaxX) / 2
-        const cy = (distMinY + distMaxY) / 2
-        const sx = (distMaxX - distMinX) / 4
-        const sy = (distMaxY - distMinY) / 4
         return generatePositions('gaussian', {
           mean: { x: cx, y: cy, z: 0 },
-          std_dev: { x: sx, y: sy, z: 0 },
+          std_dev: { x: rx / 2, y: ry / 2, z: 0 },
         }, quantity, 42)
       } else {
         return generatePositions('grid', {
-          center: { x: (distMinX + distMaxX) / 2, y: (distMinY + distMaxY) / 2, z: 0 },
+          center: { x: cx, y: cy, z: 0 },
           distances: { x: distSpacing, y: distSpacing, z: 0 },
           layout: [Math.ceil(Math.sqrt(quantity)), Math.ceil(quantity / Math.ceil(Math.sqrt(quantity))), 1],
         }, quantity)
       }
     } catch { return [] }
-  }, [mode, selectedType, distMethod, quantity, distMinX, distMinY, distMaxX, distMaxY, distSpacing])
+  }, [mode, selectedType, distMethod, quantity, distCenterX, distCenterY, distRangeX, distRangeY, distSpacing])
+
   // Sync distribute preview to placement store for ghost rendering
   useEffect(() => {
     if (mode === 'distribute' && selectedType) {
@@ -149,6 +161,39 @@ export function SpawnPalette() {
     }
   }, [selectedType, controller, prefix, mode, quantity, needsController, distPreview])
 
+  const handlePickCenter = useCallback(() => {
+    if (pickingCenter) {
+      // Confirm pick
+      const pos = usePlacementStore.getState().cursorPos
+      if (pos) {
+        setDistCenterX(+pos.x.toFixed(2))
+        setDistCenterY(+pos.y.toFixed(2))
+      }
+      usePlacementStore.getState().cancelPlacement()
+      setPickingCenter(false)
+    } else {
+      // Start picking
+      setPickingCenter(true)
+      usePlacementStore.getState().startPlacement({
+        type: selectedType || 'box',
+        id_prefix: '__center_pick',
+      })
+    }
+  }, [pickingCenter, selectedType])
+
+  // Cancel center pick on ESC
+  useEffect(() => {
+    if (!pickingCenter) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        usePlacementStore.getState().cancelPlacement()
+        setPickingCenter(false)
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [pickingCenter])
+
   if (!loaded) return <div className="text-xs text-muted-foreground p-2">Loading metadata...</div>
 
   return (
@@ -174,7 +219,7 @@ export function SpawnPalette() {
           <button
             key={m}
             className={`rounded px-1.5 py-1 text-xs capitalize ${mode === m ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
-            onClick={() => setMode(m)}
+            onClick={() => { setMode(m); setPickingCenter(false) }}
           >{m === 'click' ? '📍' : m}</button>
         ))}
       </div>
@@ -194,23 +239,39 @@ export function SpawnPalette() {
               <button key={m} className={`flex-1 rounded px-1 py-0.5 text-xs capitalize ${distMethod === m ? 'bg-accent' : ''}`} onClick={() => setDistMethod(m)}>{m}</button>
             ))}
           </div>
-          <div className="grid grid-cols-2 gap-1 text-xs">
-            <label className="text-muted-foreground">Min X<input type="number" step={0.5} value={distMinX} onChange={(e) => setDistMinX(+e.target.value)} className="w-full bg-background border rounded px-1" /></label>
-            <label className="text-muted-foreground">Max X<input type="number" step={0.5} value={distMaxX} onChange={(e) => setDistMaxX(+e.target.value)} className="w-full bg-background border rounded px-1" /></label>
-            <label className="text-muted-foreground">Min Y<input type="number" step={0.5} value={distMinY} onChange={(e) => setDistMinY(+e.target.value)} className="w-full bg-background border rounded px-1" /></label>
-            <label className="text-muted-foreground">Max Y<input type="number" step={0.5} value={distMaxY} onChange={(e) => setDistMaxY(+e.target.value)} className="w-full bg-background border rounded px-1" /></label>
+
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex-shrink-0">Center</span>
+            <input type="number" step={0.5} value={distCenterX} onChange={(e) => setDistCenterX(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
+            <input type="number" step={0.5} value={distCenterY} onChange={(e) => setDistCenterY(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
+            <button
+              className={`rounded px-1.5 py-0.5 text-xs ${pickingCenter ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}
+              onClick={handlePickCenter}
+            >{pickingCenter ? '✓' : '🎯'}</button>
           </div>
+
+          <div className="flex items-center gap-1">
+            <span className="text-xs text-muted-foreground flex-shrink-0">± Range</span>
+            <input type="number" step={0.5} min={0.1} value={distRangeX} onChange={(e) => setDistRangeX(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
+            <input type="number" step={0.5} min={0.1} value={distRangeY} onChange={(e) => setDistRangeY(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
+          </div>
+
           {distMethod === 'grid' && (
-            <label className="text-xs text-muted-foreground">Spacing<input type="number" step={0.1} value={distSpacing} onChange={(e) => setDistSpacing(+e.target.value)} className="w-full bg-background border rounded px-1" /></label>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground flex-shrink-0">Spacing</span>
+              <input type="number" step={0.1} min={0.1} value={distSpacing} onChange={(e) => setDistSpacing(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
+            </div>
           )}
-          <div className="text-[10px] text-muted-foreground">{distPreview.length} positions previewed</div>
+          <div className="text-[10px] text-muted-foreground">{distPreview.length} ghost preview</div>
         </div>
       )}
 
-      {placementActive ? (
+      {placementActive && !pickingCenter ? (
         <button className="bg-muted rounded px-2 py-1.5 text-xs font-medium" onClick={() => usePlacementStore.getState().cancelPlacement()}>
           Cancel placement (ESC)
         </button>
+      ) : pickingCenter ? (
+        <div className="text-xs text-muted-foreground text-center">Click scene to set center...</div>
       ) : (
         <button
           className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50"
