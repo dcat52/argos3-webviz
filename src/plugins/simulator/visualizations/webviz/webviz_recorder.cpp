@@ -13,6 +13,7 @@
 
 #include <argos3/core/simulator/entity/composable_entity.h>
 #include <argos3/core/simulator/entity/embodied_entity.h>
+#include <argos3/core/simulator/loop_functions.h>
 #include <argos3/core/utility/plugins/dynamic_loading.h>
 #include <argos3/plugins/simulator/entities/led_equipped_entity.h>
 
@@ -61,8 +62,6 @@ namespace argos {
 
     return cJson;
   }
-
-namespace argos {
 
   /****************************************/
   /****************************************/

@@ -35,13 +35,15 @@ namespace argos {
         cJson["id"] = c_entity.GetId();
         cJson["is_movable"] = c_entity.GetEmbodiedEntity().IsMovable();
 
-        /* Get body color */
+#ifdef ARGOS_WEBVIZ_HAS_BODY_COLOR
+        /* Get body color (requires patched ARGoS3 with GetBodyColor) */
         const CColor& cBodyColor = c_entity.GetBodyColor();
         std::stringstream strBodyColorStream;
         strBodyColorStream << "#" << std::setfill('0') << std::setw(6) << std::hex
                            << (cBodyColor.GetRed() << 16 | cBodyColor.GetGreen() << 8 |
                                cBodyColor.GetBlue());
         cJson["color"] = strBodyColorStream.str();
+#endif
 
         /* Get Size of the Cylinder */
         cJson["height"] = c_entity.GetHeight();
