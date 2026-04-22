@@ -3,6 +3,7 @@ import { useMetadataStore } from '@/stores/metadataStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { usePlacementStore } from '@/stores/placementStore'
+import { useInteractionStore } from '@/stores/interactionStore'
 import { generatePositions } from '@/lib/distribute'
 import type { Vec3 } from '@/types/protocol'
 
@@ -141,6 +142,7 @@ export function SpawnPalette() {
     }
 
     if (mode === 'click') {
+      useInteractionStore.getState().setMode('place')
       usePlacementStore.getState().startPlacement({
         type: selectedType,
         controller: needsController ? controller : undefined,
