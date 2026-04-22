@@ -377,6 +377,16 @@ Resolution: `StepExperiment()` drains the command queue before calling `UpdateSp
 - Ghost rendering infrastructure exists (all renderers support `ghost` prop with transparent materials)
 - Needs: placement mode state machine, ground plane click handler, preview component
 
+### UX: Interaction Mode Toolbar
+- Current placement mode can conflict with entity selection (clicking to place may hit existing entities)
+- Center-pick for distribute reuses placement store, causing state conflicts
+- **Needed**: Floating toolbar at top of viewport with mode icons (Select / Place / Distribute)
+- Select mode: click selects entities, ctrl+drag moves
+- Place mode: all clicks go to placement, entity selection disabled, clear banner "Click to place — ESC to cancel"
+- Distribute mode: configure params in sidebar, ghost preview in scene, click to set center
+- Toolbar appears contextually when spawn palette is active
+- Consider: right-click context menu for entity-specific actions (delete, duplicate, inspect)
+
 ### Distribute Panel
 - Client-side `distribute.ts` algorithm exists (uniform/gaussian/grid/constant with seedable PRNG)
 - C++ server-side distribute handler exists with collision retry
