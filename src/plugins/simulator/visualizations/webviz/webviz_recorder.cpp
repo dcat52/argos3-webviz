@@ -205,9 +205,9 @@ namespace argos {
       setCurrentIds.insert(c["id"].get<std::string>());
     }
     nlohmann::json cRemoved = nlohmann::json::array();
-    for (auto& [strPrevId, _] : mapPrev) {
-      if (setCurrentIds.find(strPrevId) == setCurrentIds.end()) {
-        cRemoved.push_back(strPrevId);
+    for (auto it = mapPrev.begin(); it != mapPrev.end(); ++it) {
+      if (setCurrentIds.find(it->first) == setCurrentIds.end()) {
+        cRemoved.push_back(it->first);
       }
     }
     if (!cRemoved.empty()) {

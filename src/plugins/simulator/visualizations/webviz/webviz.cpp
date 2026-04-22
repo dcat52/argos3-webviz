@@ -18,9 +18,14 @@
 #include <argos3/plugins/simulator/entities/box_entity.h>
 #include <argos3/plugins/simulator/entities/cylinder_entity.h>
 #include <argos3/plugins/robots/foot-bot/simulator/footbot_entity.h>
-#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
 #include <argos3/core/simulator/entity/embodied_entity.h>
 #include <argos3/core/utility/math/rng.h>
+
+/* Optional robot includes — may not be installed */
+#if __has_include(<argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>)
+#include <argos3/plugins/robots/kheperaiv/simulator/kheperaiv_entity.h>
+#define WEBVIZ_HAS_KHEPERAIV 1
+#endif
 
 namespace argos {
 
@@ -385,8 +390,13 @@ namespace argos {
                 std::string strCtrl = cmd["controller"].get<std::string>();
                 pcEntity = new CFootBotEntity(strId, strCtrl, cPos, cOrient);
               } else if (strType == "kheperaiv") {
+#ifdef WEBVIZ_HAS_KHEPERAIV
                 std::string strCtrl = cmd["controller"].get<std::string>();
                 pcEntity = new CKheperaIVEntity(strId, strCtrl, cPos, cOrient);
+#else
+                LOGERR << "[ERROR] kheperaiv not available in this build\n";
+                return;
+#endif
               } else {
                 LOGERR << "[ERROR] Unknown entity type: " << strType << '\n';
                 return;
@@ -490,8 +500,10 @@ namespace argos {
                     pcEntity = new CFootBotEntity(strId,
                       cmd["controller"].get<std::string>(), cPos, cOrient);
                   } else if (strType == "kheperaiv") {
+#ifdef WEBVIZ_HAS_KHEPERAIV
                     pcEntity = new CKheperaIVEntity(strId,
                       cmd["controller"].get<std::string>(), cPos, cOrient);
+#endif
                   }
                   if (pcEntity) {
                     m_cSimulator.GetLoopFunctions().AddEntity(*pcEntity);
