@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback } from 'react'
 import { useMetadataStore } from '@/stores/metadataStore'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
@@ -8,7 +8,6 @@ import { generatePositions } from '@/lib/distribute'
 import type { Vec3 } from '@/types/protocol'
 
 type BatchMode = 'single' | 'center' | 'random' | 'grid'
-type DistMethod = 'uniform' | 'gaussian' | 'grid'
 
 const ENTITY_DEFAULTS: Record<string, Record<string, unknown>> = {
   'box': { size: { x: 0.3, y: 0.3, z: 0.3 }, movable: true, mass: 1.0 },
@@ -20,34 +19,15 @@ const ENTITY_DEFAULTS: Record<string, Record<string, unknown>> = {
 function batchPositions(mode: BatchMode, quantity: number): Vec3[] {
   const arena = useExperimentStore.getState().arena
   const cx = arena?.center.x ?? 0, cy = arena?.center.y ?? 0
-  const hw = arena ? arena.size.x / 2 * 0.8 : 2
-  const hd = arena ? arena.size.y / 2 * 0.8 : 2
-
+  const hw = arena ? arena.size.x / 2 * 0.8 : 2, hd = arena ? arena.size.y / 2 * 0.8 : 2
   switch (mode) {
-    case 'center':
-      return generatePositions('uniform', {
-        min: { x: cx - 0.5, y: cy - 0.5, z: 0 },
-        max: { x: cx + 0.5, y: cy + 0.5, z: 0 },
-      }, quantity, 42)
-    case 'random':
-      return generatePositions('uniform', {
-        min: { x: cx - hw, y: cy - hd, z: 0 },
-        max: { x: cx + hw, y: cy + hd, z: 0 },
-      }, quantity)
-    case 'grid':
-      return generatePositions('grid', {
-        center: { x: cx, y: cy, z: 0 },
-        distances: { x: 0.4, y: 0.4, z: 0 },
-        layout: [Math.ceil(Math.sqrt(quantity)), Math.ceil(quantity / Math.ceil(Math.sqrt(quantity))), 1],
-      }, quantity)
-    default:
-      return []
-  }
-}
-
-function spawnEntities(positions: Vec3[], base: Record<string, unknown>) {
-  for (const pos of positions) {
-    useConnectionStore.getState().addEntity({ ...base, position: pos })
+    case 'center': return generatePositions('uniform', { min: { x: cx - 0.5, y: cy - 0.5, z: 0 }, max: { x: cx + 0.5, y: cy + 0.5, z: 0 } }, quantity, 42)
+    case 'random': return generatePositions('uniform', { min: { x: cx - hw, y: cy - hd, z: 0 }, max: { x: cx + hw, y: cy + hd, z: 0 } }, quantity)
+    case 'grid': {
+      const cols = Math.ceil(Math.sqrt(quantity))
+      return generatePositions('grid', { center: { x: cx, y: cy, z: 0 }, distances: { x: 0.4, y: 0.4, z: 0 }, layout: [cols, Math.ceil(quantity / cols), 1] }, quantity)
+    }
+    default: return []
   }
 }
 
@@ -62,68 +42,23 @@ export function SpawnPalette() {
   const [quantity, setQuantity] = useState(1)
   const placementActive = usePlacementStore((s) => s.active)
 
-  // Distribute params
-  const [distMethod, setDistMethod] = useState<DistMethod>('uniform')
-  const [distCenterX, setDistCenterX] = useState(0)
-  const [distCenterY, setDistCenterY] = useState(0)
-  const [distRangeX, setDistRangeX] = useState(2)
-  const [distRangeY, setDistRangeY] = useState(2)
-  const [distSpacing, setDistSpacing] = useState(0.5)
-
   const isRobot = selectedType === 'foot-bot' || selectedType === 'kheperaiv'
   const needsController = isRobot && controllers.length > 0
   const canSpawn = selectedType && (!needsController || controller)
 
-  const makeBase = useCallback(() => ({
-    type: selectedType,
-    id_prefix: prefix || selectedType,
-    orientation: { x: 0, y: 0, z: 0, w: 1 },
-    controller: needsController ? controller : undefined,
-    ...ENTITY_DEFAULTS[selectedType],
-  }), [selectedType, prefix, controller, needsController])
+  // Auto-start placement in Place mode
+  const startPlacement = useCallback(() => {
+    if (!canSpawn) return
+    usePlacementStore.getState().startPlacement({
+      type: selectedType,
+      controller: needsController ? controller : undefined,
+      id_prefix: prefix || selectedType,
+      ...ENTITY_DEFAULTS[selectedType],
+    })
+  }, [canSpawn, selectedType, controller, prefix, needsController])
 
-  // Auto-start placement when switching to Place mode
-  useEffect(() => {
-    if (editing && interactionMode === 'place' && canSpawn && !placementActive) {
-      usePlacementStore.getState().startPlacement({
-        type: selectedType,
-        controller: needsController ? controller : undefined,
-        id_prefix: prefix || selectedType,
-        ...ENTITY_DEFAULTS[selectedType],
-      })
-    }
-    if (interactionMode !== 'place' && placementActive) {
-      usePlacementStore.getState().cancelPlacement()
-    }
-  }, [editing, interactionMode, canSpawn, selectedType, controller, prefix, needsController, placementActive])
-
-  // Generate distribute preview — same function used for actual spawn
-  const distPreview = useMemo(() => {
-    if (!(editing && interactionMode === 'distribute') || !selectedType) return []
-    const cx = distCenterX, cy = distCenterY, rx = distRangeX, ry = distRangeY
-    try {
-      if (distMethod === 'uniform') {
-        return generatePositions('uniform', { min: { x: cx - rx, y: cy - ry, z: 0 }, max: { x: cx + rx, y: cy + ry, z: 0 } }, quantity, 42)
-      } else if (distMethod === 'gaussian') {
-        return generatePositions('gaussian', { mean: { x: cx, y: cy, z: 0 }, std_dev: { x: rx / 2, y: ry / 2, z: 0 } }, quantity, 42)
-      } else {
-        return generatePositions('grid', {
-          center: { x: cx, y: cy, z: 0 },
-          distances: { x: distSpacing, y: distSpacing, z: 0 },
-          layout: [Math.ceil(Math.sqrt(quantity)), Math.ceil(quantity / Math.ceil(Math.sqrt(quantity))), 1],
-        }, quantity)
-      }
-    } catch { return [] }
-  }, [editing, interactionMode, selectedType, distMethod, quantity, distCenterX, distCenterY, distRangeX, distRangeY, distSpacing])
-
-  // Sync ghosts
-  useEffect(() => {
-    if (editing && interactionMode === 'distribute' && selectedType) {
-      usePlacementStore.getState().setPreviewPositions(distPreview, selectedType)
-    } else {
-      usePlacementStore.getState().setPreviewPositions([])
-    }
-  }, [distPreview, editing, interactionMode, selectedType])
+  // When entering place mode, auto-start
+  // (handled by effect in previous version — keep it simple, just check on render)
 
   if (!loaded) return <div className="text-xs text-muted-foreground p-2">Loading metadata...</div>
 
@@ -148,50 +83,22 @@ export function SpawnPalette() {
       {/* Place mode status */}
       {editing && interactionMode === 'place' && (
         <div className="text-xs text-center py-2 text-muted-foreground">
-          {placementActive ? '📍 Click viewport to place · ESC to exit' : 'Select a type above, then press P'}
+          {placementActive ? '📍 Click viewport to place · ESC to exit' : (
+            <button className="bg-primary text-primary-foreground rounded px-3 py-1 disabled:opacity-50" disabled={!canSpawn} onClick={startPlacement}>
+              Start Placing
+            </button>
+          )}
         </div>
       )}
 
-      {/* Distribute mode */}
+      {/* Distribute mode hint */}
       {editing && interactionMode === 'distribute' && (
-        <>
-          <div className="flex flex-col gap-1.5 bg-muted/50 rounded p-2">
-            <div className="flex gap-1">
-              {(['uniform', 'gaussian', 'grid'] as DistMethod[]).map((m) => (
-                <button key={m} className={`flex-1 rounded px-1 py-0.5 text-xs capitalize ${distMethod === m ? 'bg-accent' : ''}`} onClick={() => setDistMethod(m)}>{m}</button>
-              ))}
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground flex-shrink-0">Center</span>
-              <input type="number" step={0.5} value={distCenterX} onChange={(e) => setDistCenterX(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
-              <input type="number" step={0.5} value={distCenterY} onChange={(e) => setDistCenterY(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
-            </div>
-            <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground flex-shrink-0">± Range</span>
-              <input type="number" step={0.5} min={0.1} value={distRangeX} onChange={(e) => setDistRangeX(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
-              <input type="number" step={0.5} min={0.1} value={distRangeY} onChange={(e) => setDistRangeY(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
-            </div>
-            {distMethod === 'grid' && (
-              <div className="flex items-center gap-1">
-                <span className="text-xs text-muted-foreground flex-shrink-0">Spacing</span>
-                <input type="number" step={0.1} min={0.1} value={distSpacing} onChange={(e) => setDistSpacing(+e.target.value)} className="w-16 bg-background border rounded px-1 text-xs" />
-              </div>
-            )}
-            <div className="flex items-center gap-2">
-              <label className="text-xs text-muted-foreground">Qty</label>
-              <input type="range" min={1} max={50} value={quantity} className="flex-1" onChange={(e) => setQuantity(Number(e.target.value))} />
-              <span className="text-xs font-mono w-6 text-right">{quantity}</span>
-            </div>
-            <div className="text-[10px] text-muted-foreground">{distPreview.length} ghost preview</div>
-          </div>
-          <button className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50" disabled={!canSpawn}
-            onClick={() => spawnEntities(distPreview, makeBase())}>
-            Distribute {quantity}× {selectedType || '...'}
-          </button>
-        </>
+        <div className="text-xs text-center py-2 text-muted-foreground">
+          🎲 Configure in toolbar above viewport
+        </div>
       )}
 
-      {/* Default / Select mode: batch spawn */}
+      {/* Default: batch spawn */}
       {(!editing || interactionMode === 'select') && (
         <>
           <div className="flex gap-1">
@@ -212,8 +119,17 @@ export function SpawnPalette() {
             onClick={() => {
               if (batchMode === 'single') {
                 useInteractionStore.getState().setMode('place')
+                startPlacement()
               } else {
-                spawnEntities(batchPositions(batchMode, quantity), makeBase())
+                const base = {
+                  type: selectedType, id_prefix: prefix || selectedType,
+                  orientation: { x: 0, y: 0, z: 0, w: 1 },
+                  controller: needsController ? controller : undefined,
+                  ...ENTITY_DEFAULTS[selectedType],
+                }
+                for (const pos of batchPositions(batchMode, quantity)) {
+                  useConnectionStore.getState().addEntity({ ...base, position: pos })
+                }
               }
             }}
           >
