@@ -6,6 +6,13 @@ import { useConnectionStore } from '@/stores/connectionStore'
 import { usePlacementStore } from '@/stores/placementStore'
 import { useInteractionStore } from '@/stores/interactionStore'
 
+const camCtrl = () => (globalThis as any).__cameraControlsRef?.current
+
+function enableCamera(enabled: boolean) {
+  const c = camCtrl()
+  if (c) c.enabled = enabled
+}
+
 export function useDrag() {
   const { camera, gl, scene } = useThree()
   const groundPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), [])
@@ -16,8 +23,6 @@ export function useDrag() {
     let dragging = false
     let dragId: string | null = null
     let ctrlHeld = false
-
-    const camRef = () => (globalThis as any).__cameraControlsRef?.current
 
     const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
       const rect = canvas.getBoundingClientRect()
@@ -53,25 +58,41 @@ export function useDrag() {
       return null
     }
 
-    // --- Ctrl key for drag in select mode ---
-    const onKeyDown = (e: KeyboardEvent) => {
+    const updateCursor = () => {
       const mode = useInteractionStore.getState().mode
-      if (mode !== 'select') return
+      const placement = usePlacementStore.getState()
+      if (mode === 'place' && placement.active) {
+        canvas.style.cursor = 'copy'
+      } else if (ctrlHeld) {
+        canvas.style.cursor = 'crosshair'
+      } else {
+        canvas.style.cursor = ''
+      }
+    }
+
+    const updateCamera = () => {
+      const mode = useInteractionStore.getState().mode
+      const placement = usePlacementStore.getState()
+      if (dragging || (mode === 'place' && placement.active) || ctrlHeld) {
+        enableCamera(false)
+      } else {
+        enableCamera(true)
+      }
+    }
+
+    // Ctrl key
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Control' && !ctrlHeld) {
         ctrlHeld = true
-        const c = camRef()
-        if (c) c.enabled = false
-        canvas.style.cursor = 'crosshair'
+        updateCamera()
+        updateCursor()
       }
     }
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'Control') {
         ctrlHeld = false
-        if (!dragging) {
-          const c = camRef()
-          if (c) c.enabled = true
-          canvas.style.cursor = ''
-        }
+        updateCamera()
+        updateCursor()
       }
     }
 
@@ -79,20 +100,7 @@ export function useDrag() {
       if (e.button !== 0) return
       const mode = useInteractionStore.getState().mode
 
-      // SELECT mode: ctrl+click to drag entities
-      if (mode === 'select' && ctrlHeld) {
-        const id = findEntityId(e)
-        if (id) {
-          dragId = id
-          dragging = true
-          useExperimentStore.getState().startDrag(id)
-          e.stopPropagation()
-          e.preventDefault()
-        }
-        return
-      }
-
-      // PLACE mode: click to place entity
+      // Place mode: click to place
       if (mode === 'place') {
         const placement = usePlacementStore.getState()
         if (!placement.active) return
@@ -116,12 +124,25 @@ export function useDrag() {
         e.preventDefault()
         return
       }
+
+      // Select mode: ctrl+click to drag
+      if (ctrlHeld) {
+        const id = findEntityId(e)
+        if (id) {
+          dragId = id
+          dragging = true
+          useExperimentStore.getState().startDrag(id)
+          updateCamera()
+          e.stopPropagation()
+          e.preventDefault()
+        }
+      }
     }
 
     const onPointerMove = (e: PointerEvent) => {
       const mode = useInteractionStore.getState().mode
 
-      // Update ghost cursor in place mode
+      // Ghost cursor in place mode
       if (mode === 'place') {
         const placement = usePlacementStore.getState()
         if (placement.active) {
@@ -130,12 +151,10 @@ export function useDrag() {
         }
       }
 
-      // Drag in select mode
+      // Drag
       if (dragging && dragId) {
         const hit = groundHit(e)
-        if (hit) {
-          useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
-        }
+        if (hit) useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
       }
     }
 
@@ -149,38 +168,13 @@ export function useDrag() {
       store.endDrag()
       dragging = false
       dragId = null
-      if (!ctrlHeld) {
-        const c = camRef()
-        if (c) c.enabled = true
-        canvas.style.cursor = ''
-      }
+      updateCamera()
+      updateCursor()
     }
 
-    // Mode change: update cursor and camera
-    const unsub = useInteractionStore.subscribe((state) => {
-      if (state.mode === 'place' && usePlacementStore.getState().active) {
-        canvas.style.cursor = 'copy'
-        const c = camRef()
-        if (c) c.enabled = false
-      } else if (state.mode === 'select') {
-        canvas.style.cursor = ''
-        const c = camRef()
-        if (c && !ctrlHeld) c.enabled = true
-      } else if (state.mode === 'distribute') {
-        canvas.style.cursor = ''
-        const c = camRef()
-        if (c) c.enabled = true
-      }
-    })
-
-    const unsubPlace = usePlacementStore.subscribe((state) => {
-      const iMode = useInteractionStore.getState().mode
-      if (iMode === 'place') {
-        canvas.style.cursor = state.active ? 'copy' : ''
-        const c = camRef()
-        if (c) c.enabled = !state.active
-      }
-    })
+    // React to store changes
+    const unsub1 = useInteractionStore.subscribe(() => { updateCamera(); updateCursor() })
+    const unsub2 = usePlacementStore.subscribe(() => { updateCamera(); updateCursor() })
 
     window.addEventListener('keydown', onKeyDown)
     window.addEventListener('keyup', onKeyUp)
@@ -189,15 +183,13 @@ export function useDrag() {
     canvas.addEventListener('pointerup', onPointerUp)
 
     return () => {
-      unsub()
-      unsubPlace()
+      unsub1(); unsub2()
       window.removeEventListener('keydown', onKeyDown)
       window.removeEventListener('keyup', onKeyUp)
       canvas.removeEventListener('pointerdown', onPointerDown, true)
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
-      const c = camRef()
-      if (c) c.enabled = true
+      enableCamera(true)
       canvas.style.cursor = ''
     }
   }, [camera, gl, scene, groundPlane, raycaster])

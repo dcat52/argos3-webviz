@@ -7,7 +7,7 @@ import { useInteractionStore } from '@/stores/interactionStore'
 import { generatePositions } from '@/lib/distribute'
 import type { Vec3 } from '@/types/protocol'
 
-type BatchMode = 'single' | 'center' | 'random' | 'grid' | 'distribute'
+type BatchMode = 'single' | 'center' | 'random' | 'grid'
 type DistMethod = 'uniform' | 'gaussian' | 'grid'
 
 const ENTITY_DEFAULTS: Record<string, Record<string, unknown>> = {
@@ -17,42 +17,38 @@ const ENTITY_DEFAULTS: Record<string, Record<string, unknown>> = {
   'kheperaiv': {},
 }
 
-function findClearSpots(count: number, step: number): Vec3[] {
-  const entities = new Map(useExperimentStore.getState().entities)
-  const positions: Vec3[] = []
-  for (let i = 0; i < count; i++) {
-    let x = 0, y = 0
-    for (let a = 0; a < 100; a++) {
-      const tooClose = Array.from(entities.values()).some(
-        (e: any) => 'position' in e && Math.abs(e.position.x - x) < step && Math.abs(e.position.y - y) < step
-      )
-      if (!tooClose) break
-      const angle = a * 2.4; const r = step * Math.sqrt(a)
-      x = r * Math.cos(angle); y = r * Math.sin(angle)
-    }
-    positions.push({ x, y, z: 0 })
-    entities.set(`__tmp_${i}`, { position: { x, y, z: 0 } } as any)
+function batchPositions(mode: BatchMode, quantity: number): Vec3[] {
+  const arena = useExperimentStore.getState().arena
+  const cx = arena?.center.x ?? 0, cy = arena?.center.y ?? 0
+  const hw = arena ? arena.size.x / 2 * 0.8 : 2
+  const hd = arena ? arena.size.y / 2 * 0.8 : 2
+
+  switch (mode) {
+    case 'center':
+      return generatePositions('uniform', {
+        min: { x: cx - 0.5, y: cy - 0.5, z: 0 },
+        max: { x: cx + 0.5, y: cy + 0.5, z: 0 },
+      }, quantity, 42)
+    case 'random':
+      return generatePositions('uniform', {
+        min: { x: cx - hw, y: cy - hd, z: 0 },
+        max: { x: cx + hw, y: cy + hd, z: 0 },
+      }, quantity)
+    case 'grid':
+      return generatePositions('grid', {
+        center: { x: cx, y: cy, z: 0 },
+        distances: { x: 0.4, y: 0.4, z: 0 },
+        layout: [Math.ceil(Math.sqrt(quantity)), Math.ceil(quantity / Math.ceil(Math.sqrt(quantity))), 1],
+      }, quantity)
+    default:
+      return []
   }
-  return positions
 }
 
-function randomInArena(count: number): Vec3[] {
-  const arena = useExperimentStore.getState().arena
-  const hw = arena ? arena.size.x / 2 * 0.8 : 2, hd = arena ? arena.size.y / 2 * 0.8 : 2
-  const cx = arena?.center.x ?? 0, cy = arena?.center.y ?? 0
-  return Array.from({ length: count }, () => ({
-    x: cx + (Math.random() - 0.5) * 2 * hw, y: cy + (Math.random() - 0.5) * 2 * hd, z: 0,
-  }))
-}
-
-function gridPositions(count: number, spacing: number): Vec3[] {
-  const cols = Math.ceil(Math.sqrt(count))
-  const arena = useExperimentStore.getState().arena
-  const cx = arena?.center.x ?? 0, cy = arena?.center.y ?? 0
-  return Array.from({ length: count }, (_, i) => ({
-    x: cx + (i % cols - (cols - 1) / 2) * spacing,
-    y: cy + (Math.floor(i / cols) - (Math.ceil(count / cols) - 1) / 2) * spacing, z: 0,
-  }))
+function spawnEntities(positions: Vec3[], base: Record<string, unknown>) {
+  for (const pos of positions) {
+    useConnectionStore.getState().addEntity({ ...base, position: pos })
+  }
 }
 
 export function SpawnPalette() {
@@ -78,9 +74,17 @@ export function SpawnPalette() {
   const needsController = isRobot && controllers.length > 0
   const canSpawn = selectedType && (!needsController || controller)
 
-  // Auto-start placement when switching to Place mode with a type selected
+  const makeBase = useCallback(() => ({
+    type: selectedType,
+    id_prefix: prefix || selectedType,
+    orientation: { x: 0, y: 0, z: 0, w: 1 },
+    controller: needsController ? controller : undefined,
+    ...ENTITY_DEFAULTS[selectedType],
+  }), [selectedType, prefix, controller, needsController])
+
+  // Auto-start placement when switching to Place mode
   useEffect(() => {
-    if (interactionMode === 'place' && canSpawn && !placementActive) {
+    if (editing && interactionMode === 'place' && canSpawn && !placementActive) {
       usePlacementStore.getState().startPlacement({
         type: selectedType,
         controller: needsController ? controller : undefined,
@@ -91,11 +95,11 @@ export function SpawnPalette() {
     if (interactionMode !== 'place' && placementActive) {
       usePlacementStore.getState().cancelPlacement()
     }
-  }, [interactionMode, canSpawn, selectedType, controller, prefix, needsController, placementActive])
+  }, [editing, interactionMode, canSpawn, selectedType, controller, prefix, needsController, placementActive])
 
-  // Generate distribute preview
+  // Generate distribute preview — same function used for actual spawn
   const distPreview = useMemo(() => {
-    if (interactionMode !== 'distribute' || !selectedType) return []
+    if (!(editing && interactionMode === 'distribute') || !selectedType) return []
     const cx = distCenterX, cy = distCenterY, rx = distRangeX, ry = distRangeY
     try {
       if (distMethod === 'uniform') {
@@ -104,37 +108,22 @@ export function SpawnPalette() {
         return generatePositions('gaussian', { mean: { x: cx, y: cy, z: 0 }, std_dev: { x: rx / 2, y: ry / 2, z: 0 } }, quantity, 42)
       } else {
         return generatePositions('grid', {
-          center: { x: cx, y: cy, z: 0 }, distances: { x: distSpacing, y: distSpacing, z: 0 },
+          center: { x: cx, y: cy, z: 0 },
+          distances: { x: distSpacing, y: distSpacing, z: 0 },
           layout: [Math.ceil(Math.sqrt(quantity)), Math.ceil(quantity / Math.ceil(Math.sqrt(quantity))), 1],
         }, quantity)
       }
     } catch { return [] }
-  }, [interactionMode, selectedType, distMethod, quantity, distCenterX, distCenterY, distRangeX, distRangeY, distSpacing])
+  }, [editing, interactionMode, selectedType, distMethod, quantity, distCenterX, distCenterY, distRangeX, distRangeY, distSpacing])
 
-  // Sync distribute preview ghosts
+  // Sync ghosts
   useEffect(() => {
-    if (interactionMode === 'distribute' && selectedType) {
+    if (editing && interactionMode === 'distribute' && selectedType) {
       usePlacementStore.getState().setPreviewPositions(distPreview, selectedType)
     } else {
       usePlacementStore.getState().setPreviewPositions([])
     }
-  }, [distPreview, interactionMode, selectedType])
-
-  const handleBatchSpawn = useCallback(() => {
-    if (!canSpawn) return
-    const base: Record<string, unknown> = {
-      type: selectedType, id_prefix: prefix || selectedType,
-      orientation: { x: 0, y: 0, z: 0, w: 1 },
-      controller: needsController ? controller : undefined,
-      ...ENTITY_DEFAULTS[selectedType],
-    }
-    let positions: Vec3[] = []
-    if (batchMode === 'center') positions = findClearSpots(quantity, 0.3)
-    else if (batchMode === 'random') positions = randomInArena(quantity)
-    else if (batchMode === 'grid') positions = gridPositions(quantity, 0.4)
-    else if (batchMode === 'distribute') positions = distPreview
-    for (const pos of positions) useConnectionStore.getState().addEntity({ ...base, position: pos })
-  }, [selectedType, controller, prefix, batchMode, quantity, needsController, canSpawn, distPreview])
+  }, [distPreview, editing, interactionMode, selectedType])
 
   if (!loaded) return <div className="text-xs text-muted-foreground p-2">Loading metadata...</div>
 
@@ -156,14 +145,14 @@ export function SpawnPalette() {
 
       <input className="bg-background border rounded px-2 py-1 text-sm" placeholder="ID prefix (optional)" value={prefix} onChange={(e) => setPrefix(e.target.value)} />
 
-      {/* Place mode: just show status */}
+      {/* Place mode status */}
       {editing && interactionMode === 'place' && (
         <div className="text-xs text-center py-2 text-muted-foreground">
-          {placementActive ? '📍 Click viewport to place · ESC to exit' : 'Select a type above, then press P or click 📍 in toolbar'}
+          {placementActive ? '📍 Click viewport to place · ESC to exit' : 'Select a type above, then press P'}
         </div>
       )}
 
-      {/* Distribute mode: show params + commit button */}
+      {/* Distribute mode */}
       {editing && interactionMode === 'distribute' && (
         <>
           <div className="flex flex-col gap-1.5 bg-muted/50 rounded p-2">
@@ -195,13 +184,14 @@ export function SpawnPalette() {
             </div>
             <div className="text-[10px] text-muted-foreground">{distPreview.length} ghost preview</div>
           </div>
-          <button className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50" disabled={!canSpawn} onClick={handleBatchSpawn}>
+          <button className="bg-primary text-primary-foreground rounded px-2 py-1.5 text-xs font-medium disabled:opacity-50" disabled={!canSpawn}
+            onClick={() => spawnEntities(distPreview, makeBase())}>
             Distribute {quantity}× {selectedType || '...'}
           </button>
         </>
       )}
 
-      {/* Select mode: batch spawn options */}
+      {/* Default / Select mode: batch spawn */}
       {(!editing || interactionMode === 'select') && (
         <>
           <div className="flex gap-1">
@@ -223,7 +213,7 @@ export function SpawnPalette() {
               if (batchMode === 'single') {
                 useInteractionStore.getState().setMode('place')
               } else {
-                handleBatchSpawn()
+                spawnEntities(batchPositions(batchMode, quantity), makeBase())
               }
             }}
           >

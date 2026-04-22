@@ -151,14 +151,10 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   selectEntity: (id) => set({ selectedEntityId: id }),
 
   startDrag: (id) => {
-    const ref = (globalThis as any).__cameraControlsRef
-    if (ref?.current) ref.current.enabled = false
     set({ dragEntityId: id, selectedEntityId: id })
   },
 
   endDrag: () => {
-    const ref = (globalThis as any).__cameraControlsRef
-    if (ref?.current) ref.current.enabled = true
     set({ dragEntityId: null })
   },
 
