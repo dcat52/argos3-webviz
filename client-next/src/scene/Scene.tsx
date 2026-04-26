@@ -15,10 +15,13 @@ import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
 import { SelectionRing } from './SelectionRing'
+import { GhostPreview } from './GhostPreview'
+import { useDrag } from '../hooks/useDrag'
 import { FPSCounter } from './FPSCounter'
 import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
 import { HeatmapOverlay } from './HeatmapOverlay'
+import { useFeature } from '@/stores/featureStore'
 import { FloatingLabels } from './FloatingLabels'
 import { DrawOverlays } from './DrawOverlays'
 import { DynamicFloor } from './DynamicFloor'
@@ -90,11 +93,13 @@ function GlCapture() {
 const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 
 function SceneEntities() {
-  const { entities, selectedEntityId, selectEntity } = useExperimentStore(
-    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
+  const { entities, selectedEntityId, selectEntity, startDrag } = useExperimentStore(
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity, startDrag: s.startDrag }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
   const colorMap = useColorByMap()
+
+  useDrag()
 
   const handleDoubleClick = useCallback((entity: AnyEntity) => {
     if ('position' in entity) {
@@ -111,14 +116,16 @@ function SceneEntities() {
   return (
     <>
       <InstancedEntities colorMap={colorMap} />
+      <GhostPreview />
       {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
-          <group key={entity.id}>
+          <group key={entity.id} name={entity.id}>
             <EntityRenderer
               entity={entity}
               selected={entity.id === selectedEntityId}
               onClick={() => selectEntity(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
+              onPointerDown={(e: any) => { e.stopPropagation(); startDrag(entity.id) }}
               overrideColor={colorMap.get(entity.id)}
             />
             {entity.id === selectedEntityId && (
@@ -139,6 +146,8 @@ function SceneContent() {
   const arena = useExperimentStore((s) => s.arena)
   const drawCommands = useExperimentStore((s) => s.drawCommands)
   const floorData = useExperimentStore((s) => s.floorData)
+  const trailsEnabled = useFeature('trails')
+  const heatmapEnabled = useFeature('heatmap')
   useFieldDiscovery()
 
   return (
@@ -147,8 +156,8 @@ function SceneContent() {
       <CameraController />
       <SceneEntities />
       <EntityLinks />
-      <TrailRenderer />
-      <HeatmapOverlay />
+      {trailsEnabled && <TrailRenderer />}
+      {heatmapEnabled && <HeatmapOverlay />}
       <FloatingLabels />
       <DrawOverlays commands={drawCommands} />
       {floorData && arena && <DynamicFloor floorData={floorData} arena={arena} />}

@@ -19,6 +19,8 @@ namespace argos {
 
 #include <argos3/core/simulator/entity/entity.h>
 #include <argos3/core/utility/configuration/base_configurable_resource.h>
+#include <argos3/core/utility/math/vector3.h>
+#include <argos3/core/utility/math/quaternion.h>
 #include <argos3/core/utility/plugins/factory.h>
 
 #include <functional>
@@ -49,6 +51,28 @@ namespace argos {
      */
     virtual void HandleCommandFromClient(
       const std::string& str_ip, nlohmann::json c_json_command) {}
+
+    /**
+     * @brief Called when an entity is selected in the web client.
+     */
+    virtual void EntitySelected(CEntity& c_entity) {}
+
+    /**
+     * @brief Called when an entity is deselected in the web client.
+     */
+    virtual void EntityDeselected(CEntity& c_entity) {}
+
+    /**
+     * @brief Called when an entity is moved via the web client.
+     */
+    virtual void EntityMoved(CEntity& c_entity,
+      const CVector3& c_old_pos, const CVector3& c_new_pos) {}
+
+    /**
+     * @brief Called when an entity is rotated via the web client.
+     */
+    virtual void EntityRotated(CEntity& c_entity,
+      const CQuaternion& c_old_orient, const CQuaternion& c_new_orient) {}
 
     /**
      * @brief Hook to add extra content to JSON message sent to clients.

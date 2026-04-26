@@ -1,0 +1,220 @@
+import { useEffect, useMemo } from 'react'
+import { useThree } from '@react-three/fiber'
+import * as THREE from 'three'
+import { useExperimentStore } from '@/stores/experimentStore'
+import { useConnectionStore } from '@/stores/connectionStore'
+import { usePlacementStore, setDragStartScreen, isDragAboveThreshold } from '@/stores/placementStore'
+import { useInteractionStore } from '@/stores/interactionStore'
+
+const camCtrl = () => (globalThis as any).__cameraControlsRef?.current
+
+function enableCamera(enabled: boolean) {
+  const c = camCtrl()
+  if (c) c.enabled = enabled
+}
+
+export function useDrag() {
+  const { camera, gl, scene } = useThree()
+  const groundPlane = useMemo(() => new THREE.Plane(new THREE.Vector3(0, 0, 1), 0), [])
+  const raycaster = useMemo(() => new THREE.Raycaster(), [])
+
+  useEffect(() => {
+    const canvas = gl.domElement
+    let dragging = false
+    let dragId: string | null = null
+    let ctrlHeld = false
+
+    const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
+      const rect = canvas.getBoundingClientRect()
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      )
+      raycaster.setFromCamera(mouse, camera)
+      const hit = new THREE.Vector3()
+      return raycaster.ray.intersectPlane(groundPlane, hit) ? hit : null
+    }
+
+    const findEntityId = (e: PointerEvent): string | null => {
+      const rect = canvas.getBoundingClientRect()
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      )
+      raycaster.setFromCamera(mouse, camera)
+      const hits = raycaster.intersectObjects(scene.children, true)
+      const entities = useExperimentStore.getState().entities
+      for (const hit of hits) {
+        if (hit.instanceId !== undefined) {
+          const ids = (hit.object as any).userData?.entityIds as string[] | undefined
+          if (ids?.[hit.instanceId] && entities.has(ids[hit.instanceId])) return ids[hit.instanceId]
+        }
+        let obj: THREE.Object3D | null = hit.object
+        while (obj) {
+          if (obj.name && entities.has(obj.name)) return obj.name
+          obj = obj.parent
+        }
+      }
+      return null
+    }
+
+    const updateCursor = () => {
+      const mode = useInteractionStore.getState().mode
+      const placement = usePlacementStore.getState()
+      if (mode === 'place' && placement.active) {
+        canvas.style.cursor = 'copy'
+      } else if (ctrlHeld) {
+        canvas.style.cursor = 'crosshair'
+      } else {
+        canvas.style.cursor = ''
+      }
+    }
+
+    const updateCamera = () => {
+      const mode = useInteractionStore.getState().mode
+      const placement = usePlacementStore.getState()
+      if (dragging || (mode === 'place' && placement.active) || ctrlHeld) {
+        enableCamera(false)
+      } else {
+        enableCamera(true)
+      }
+    }
+
+    // Ctrl key
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Control' && !ctrlHeld) {
+        ctrlHeld = true
+        updateCamera()
+        updateCursor()
+      }
+    }
+    const onKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Control') {
+        ctrlHeld = false
+        updateCamera()
+        updateCursor()
+      }
+    }
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return
+      const mode = useInteractionStore.getState().mode
+
+      // Place mode: press to set position, drag to aim, release to spawn
+      if (mode === 'place') {
+        const placement = usePlacementStore.getState()
+        if (!placement.active) return
+        const hit = groundHit(e)
+        if (hit) {
+          setDragStartScreen(e.clientX, e.clientY)
+          usePlacementStore.getState().beginDrag({ x: hit.x, y: hit.y, z: 0 })
+        }
+        e.stopPropagation()
+        e.preventDefault()
+        return
+      }
+
+      // Select mode: ctrl+click to drag
+      if (ctrlHeld) {
+        const id = findEntityId(e)
+        if (id) {
+          dragId = id
+          dragging = true
+          useExperimentStore.getState().startDrag(id)
+          updateCamera()
+          e.stopPropagation()
+          e.preventDefault()
+        }
+      }
+    }
+
+    const onPointerMove = (e: PointerEvent) => {
+      const mode = useInteractionStore.getState().mode
+
+      // Ghost cursor + drag-to-aim in place mode
+      if (mode === 'place') {
+        const placement = usePlacementStore.getState()
+        if (placement.active) {
+          if (placement.dragging) {
+            // During drag: update orientation based on drag vector
+            if (isDragAboveThreshold(e.clientX, e.clientY)) {
+              const hit = groundHit(e)
+              if (hit) usePlacementStore.getState().updateDrag({ x: hit.x, y: hit.y, z: 0 })
+            }
+          } else {
+            // Not dragging: update ghost cursor position
+            const hit = groundHit(e)
+            if (hit) placement.updateCursor({ x: hit.x, y: hit.y, z: 0 })
+          }
+        }
+      }
+
+      // Drag
+      if (dragging && dragId) {
+        const hit = groundHit(e)
+        if (hit) useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
+      }
+    }
+
+    const onPointerUp = (e: PointerEvent) => {
+      // Place mode: release to spawn with orientation
+      const mode = useInteractionStore.getState().mode
+      if (mode === 'place') {
+        const placement = usePlacementStore.getState()
+        if (placement.dragging && placement.config) {
+          const result = usePlacementStore.getState().endDrag()
+          if (result) {
+            const config = placement.config
+            useConnectionStore.getState().addEntity({
+              type: config.type,
+              id_prefix: config.id_prefix ?? config.type,
+              position: result.position,
+              orientation: result.orientation,
+              controller: config.controller,
+              size: config.size,
+              movable: config.movable,
+              mass: config.mass,
+              radius: config.radius,
+              height: config.height,
+            })
+          }
+        }
+        return
+      }
+
+      // Entity drag: release to commit move
+      if (!dragging || !dragId) return
+      const store = useExperimentStore.getState()
+      const entity = store.entities.get(dragId)
+      if (entity && 'position' in entity && 'orientation' in entity) {
+        useConnectionStore.getState().moveEntity(dragId, entity.position, entity.orientation)
+      }
+      store.endDrag()
+      dragging = false
+      dragId = null
+      updateCamera()
+      updateCursor()
+    }
+
+    // React to store changes
+    const unsub1 = useInteractionStore.subscribe(() => { updateCamera(); updateCursor() })
+    const unsub2 = usePlacementStore.subscribe(() => { updateCamera(); updateCursor() })
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+    canvas.addEventListener('pointerdown', onPointerDown, true)
+    canvas.addEventListener('pointermove', onPointerMove)
+    canvas.addEventListener('pointerup', onPointerUp)
+
+    return () => {
+      unsub1(); unsub2()
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
+      canvas.removeEventListener('pointerdown', onPointerDown, true)
+      canvas.removeEventListener('pointermove', onPointerMove)
+      canvas.removeEventListener('pointerup', onPointerUp)
+      enableCamera(true)
+      canvas.style.cursor = ''
+    }
+  }, [camera, gl, scene, groundPlane, raycaster])
+}

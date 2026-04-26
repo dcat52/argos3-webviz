@@ -54,7 +54,10 @@ namespace argos {
 #include <argos3/core/utility/plugins/dynamic_loading.h>
 
 #include <atomic>
+#include <functional>
+#include <mutex>
 #include <thread>
+#include <unordered_map>
 
 #include "utility/CTimer.h"
 #include "utility/EExperimentState.h"
@@ -145,6 +148,24 @@ namespace argos {
     void MoveEntity(
       std::string str_entity_id, CVector3 c_pos, CQuaternion c_orientation);
 
+    /**
+     * @brief Enqueue a command to be executed on the simulation thread.
+     * Thread-safe: can be called from the uWS event loop thread.
+     */
+    void EnqueueCommand(std::function<void()> fn);
+
+    /**
+     * @brief Drain all queued commands on the simulation thread.
+     * Must only be called from the simulation thread.
+     */
+    void DrainCommandQueue();
+
+    /**
+     * @brief Generate a unique entity ID with the given prefix.
+     * Format: prefix_N where N is an incrementing counter.
+     */
+    std::string GenerateEntityId(const std::string& str_prefix);
+
    private:
     /** Experiment State, declared atomic as it is used by many threads */
     std::atomic<Webviz::EExperimentState> m_eExperimentState;
@@ -190,6 +211,13 @@ namespace argos {
 
     /** Whether schema has been sent */
     bool m_bSchemaSent = false;
+
+    /** Command queue for thread-safe entity mutations */
+    std::mutex m_mtxCommandQueue;
+    std::vector<std::function<void()>> m_vecCommandQueue;
+
+    /** Next entity ID counter per prefix */
+    std::unordered_map<std::string, UInt32> m_mapNextEntityIdx;
 
     /**
      * @brief Function which run in Simulation thread

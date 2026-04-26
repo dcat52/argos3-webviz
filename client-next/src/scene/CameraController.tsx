@@ -25,9 +25,15 @@ export function CameraController() {
   const preset = useCameraStore((s) => s.preset)
   const flyToTarget = useCameraStore((s) => s.flyToTarget)
   const clearFlyTo = useCameraStore((s) => s.clearFlyTo)
+  const setCameraControlsRef = useCameraStore((s) => s.setCameraControlsRef)
   const arena = useExperimentStore((s) => s.arena)
   const prevPreset = useRef(preset)
   const initialized = useRef(false)
+
+  useEffect(() => {
+    setCameraControlsRef(ref);
+    (globalThis as any).__cameraControlsRef = ref
+  }, [setCameraControlsRef])
 
   const minDist = useSettingsStore((s) => s.cameraMinDistance)
   const maxDistMult = useSettingsStore((s) => s.cameraMaxDistanceMultiplier)

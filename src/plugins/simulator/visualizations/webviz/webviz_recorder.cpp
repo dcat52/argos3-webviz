@@ -13,8 +13,11 @@
 
 #include <argos3/core/simulator/entity/composable_entity.h>
 #include <argos3/core/simulator/entity/embodied_entity.h>
+#include <argos3/core/simulator/loop_functions.h>
 #include <argos3/core/utility/plugins/dynamic_loading.h>
 #include <argos3/plugins/simulator/entities/led_equipped_entity.h>
+
+#include <unordered_set>
 #include <chrono>
 #include <iomanip>
 #include <sstream>
@@ -59,8 +62,6 @@ namespace argos {
 
     return cJson;
   }
-
-namespace argos {
 
   /****************************************/
   /****************************************/
@@ -195,6 +196,21 @@ namespace argos {
       if (!cChanged.empty()) {
         cDelta[strId] = std::move(cChanged);
       }
+    }
+
+    /* Detect removed entities */
+    std::unordered_set<std::string> setCurrentIds;
+    for (auto& c : cCurrentEntities) {
+      setCurrentIds.insert(c["id"].get<std::string>());
+    }
+    nlohmann::json cRemoved = nlohmann::json::array();
+    for (auto it = mapPrev.begin(); it != mapPrev.end(); ++it) {
+      if (setCurrentIds.find(it->first) == setCurrentIds.end()) {
+        cRemoved.push_back(it->first);
+      }
+    }
+    if (!cRemoved.empty()) {
+      cDelta["__removed"] = cRemoved;
     }
 
     return cDelta;

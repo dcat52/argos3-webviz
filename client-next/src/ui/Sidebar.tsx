@@ -6,6 +6,9 @@ import { Separator } from '@/components/ui/separator'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronRight } from 'lucide-react'
 import { VizConfigPanel } from './VizConfigPanel'
+import { SpawnPalette } from './SpawnPalette'
+import { useConnectionStore } from '../stores/connectionStore'
+import { useMetadataStore } from '../stores/metadataStore'
 import type { AnyEntity, Vec3, Quaternion } from '../types/protocol'
 
 const fv = (v: Vec3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`
@@ -76,6 +79,20 @@ export function Sidebar() {
       <ScrollArea className="flex-1">
         <div className="px-3 pt-2 space-y-1">
           {selected && <Inspector entity={selected} />}
+          {selected && (
+            <button
+              className="w-full text-xs bg-destructive text-destructive-foreground rounded px-2 py-1 mb-1"
+              onClick={() => {
+                useConnectionStore.getState().removeEntity(selected.id)
+                selectEntity(null)
+              }}
+            >
+              Delete {selected.id}
+            </button>
+          )}
+
+          <Separator />
+          <SpawnPalette />
 
           <Section title={`Entities (${entities.size})`}>
             {Array.from(grouped.entries()).map(([type, list]) => (
