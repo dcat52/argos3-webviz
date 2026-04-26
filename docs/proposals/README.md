@@ -52,13 +52,13 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 | PN | Title | Status | Effort | GitHub Issue |
 |----|-------|--------|--------|-------------|
-| PN-018 | [Timeline Scrubber](PN-018-timeline-scrubber.md) | 🟣 VERIFICATION | ~3.5h | — |
 | PN-019 | [Entity Manipulation & Spawning](PN-019-entity-manipulation.md) | 🔵 IMPLEMENTATION | ~20h | — |
 
 ## Completed Proposals
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-018 | Timeline Scrubber | 2026-04-21 |
 | PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
 | PN-014 | Speed Control | 2026-04-19 |
 | PN-013 | Floating Panels | 2026-04-19 |
