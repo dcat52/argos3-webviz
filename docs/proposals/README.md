@@ -50,7 +50,9 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-None — all proposals complete.
+| PN | Title | Status | Effort | GitHub Issue |
+|----|-------|--------|--------|-------------|
+| PN-021 | [Render Tiers](PN-021-render-tiers.md) | 📋 INVESTIGATION | ~4h | — |
 
 ## Completed Proposals
 
