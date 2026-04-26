@@ -50,15 +50,14 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-| PN | Title | Status | Effort | GitHub Issue |
-|----|-------|--------|--------|-------------|
-| PN-019 | [Entity Manipulation & Spawning](PN-019-entity-manipulation.md) | 🟣 VERIFICATION | ~20h | — |
+None — all proposals complete.
 
 ## Completed Proposals
 
 | PN | Title | Completed |
 |----|-------|-----------|
 | PN-020 | Feature Registry | 2026-04-26 |
+| PN-019 | Entity Manipulation & Spawning | 2026-04-26 |
 | PN-018 | Timeline Scrubber | 2026-04-21 |
 | PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
 | PN-014 | Speed Control | 2026-04-19 |
