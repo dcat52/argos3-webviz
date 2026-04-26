@@ -110,8 +110,8 @@ function GlCapture() {
 
 
 function SceneEntities() {
-  const { entities, selectedEntityId, selectEntity, debugPinnedIds } = useExperimentStore(
-    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity, debugPinnedIds: s.debugPinnedIds }))
+  const { entities, selectedEntityId, debugPinnedIds } = useExperimentStore(
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, debugPinnedIds: s.debugPinnedIds }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
   const globalTier = useSettingsStore((s) => s.renderTier)
@@ -156,9 +156,7 @@ function SceneEntities() {
               entity={entity}
               selected={entity.id === selectedEntityId}
               tier={effectiveTier(entity.id)}
-              onClick={() => selectEntity(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
-              onPointerDown={(e: any) => { e.stopPropagation() }}
               overrideColor={colorMap.get(entity.id)}
             />
             {entity.id === selectedEntityId && (

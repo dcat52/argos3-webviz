@@ -22,7 +22,6 @@ export function useDrag() {
     const canvas = gl.domElement
     let dragging = false
     let dragId: string | null = null
-    let ctrlHeld = false
 
     const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
       const rect = canvas.getBoundingClientRect()
@@ -63,8 +62,8 @@ export function useDrag() {
       const placement = usePlacementStore.getState()
       if (mode === 'place' && placement.active) {
         canvas.style.cursor = 'copy'
-      } else if (ctrlHeld) {
-        canvas.style.cursor = 'crosshair'
+      } else if (dragging) {
+        canvas.style.cursor = 'grabbing'
       } else {
         canvas.style.cursor = ''
       }
@@ -73,28 +72,16 @@ export function useDrag() {
     const updateCamera = () => {
       const mode = useInteractionStore.getState().mode
       const placement = usePlacementStore.getState()
-      if (dragging || (mode === 'place' && placement.active) || ctrlHeld) {
+      if (dragging || (mode === 'place' && placement.active)) {
         enableCamera(false)
       } else {
         enableCamera(true)
       }
     }
 
-    // Ctrl key
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Control' && !ctrlHeld) {
-        ctrlHeld = true
-        updateCamera()
-        updateCursor()
-      }
-    }
-    const onKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'Control') {
-        ctrlHeld = false
-        updateCamera()
-        updateCursor()
-      }
-    }
+    const DRAG_THRESHOLD = 5 // pixels before click becomes drag
+    let pendingEntityId: string | null = null
+    let downX = 0, downY = 0
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return
@@ -114,18 +101,11 @@ export function useDrag() {
         return
       }
 
-      // Select mode: ctrl+click to drag
-      if (ctrlHeld) {
-        const id = findEntityId(e)
-        if (id) {
-          dragId = id
-          dragging = true
-          useExperimentStore.getState().startDrag(id)
-          updateCamera()
-          e.stopPropagation()
-          e.preventDefault()
-        }
-      }
+      // Select mode: record pointer down position and entity under cursor
+      downX = e.clientX
+      downY = e.clientY
+      pendingEntityId = findEntityId(e)
+      // Don't start drag yet — wait for movement threshold
     }
 
     const onPointerMove = (e: PointerEvent) => {
@@ -136,20 +116,30 @@ export function useDrag() {
         const placement = usePlacementStore.getState()
         if (placement.active) {
           if (placement.dragging) {
-            // During drag: update orientation based on drag vector
             if (isDragAboveThreshold(e.clientX, e.clientY)) {
               const hit = groundHit(e)
               if (hit) usePlacementStore.getState().updateDrag({ x: hit.x, y: hit.y, z: 0 })
             }
           } else {
-            // Not dragging: update ghost cursor position
             const hit = groundHit(e)
             if (hit) placement.updateCursor({ x: hit.x, y: hit.y, z: 0 })
           }
         }
       }
 
-      // Drag
+      // Pending entity drag: start once threshold exceeded
+      if (!dragging && pendingEntityId) {
+        const dx = e.clientX - downX, dy = e.clientY - downY
+        if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
+          dragId = pendingEntityId
+          dragging = true
+          useExperimentStore.getState().startDrag(dragId)
+          enableCamera(false)
+          pendingEntityId = null
+        }
+      }
+
+      // Active drag: update position
       if (dragging && dragId) {
         const hit = groundHit(e)
         if (hit) useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
@@ -182,34 +172,45 @@ export function useDrag() {
         return
       }
 
-      // Entity drag: release to commit move
-      if (!dragging || !dragId) return
-      const store = useExperimentStore.getState()
-      const entity = store.entities.get(dragId)
-      if (entity && 'position' in entity && 'orientation' in entity) {
-        useConnectionStore.getState().moveEntity(dragId, entity.position, entity.orientation)
+      // Entity drag release: commit move to server
+      if (dragging && dragId) {
+        const store = useExperimentStore.getState()
+        const entity = store.entities.get(dragId)
+        if (entity && 'position' in entity && 'orientation' in entity) {
+          useConnectionStore.getState().moveEntity(dragId, entity.position, entity.orientation)
+        }
+        store.endDrag()
+        dragging = false
+        dragId = null
+        pendingEntityId = null
+        enableCamera(true)
+        updateCursor()
+        return
       }
-      store.endDrag()
-      dragging = false
-      dragId = null
-      updateCamera()
-      updateCursor()
+
+      // Click (no drag): select entity or deselect
+      if (pendingEntityId) {
+        useExperimentStore.getState().selectEntity(pendingEntityId)
+      } else {
+        // Clicked empty ground — deselect
+        const dx = e.clientX - downX, dy = e.clientY - downY
+        if (dx * dx + dy * dy <= DRAG_THRESHOLD * DRAG_THRESHOLD) {
+          useExperimentStore.getState().selectEntity(null)
+        }
+      }
+      pendingEntityId = null
     }
 
     // React to store changes
     const unsub1 = useInteractionStore.subscribe(() => { updateCamera(); updateCursor() })
     const unsub2 = usePlacementStore.subscribe(() => { updateCamera(); updateCursor() })
 
-    window.addEventListener('keydown', onKeyDown)
-    window.addEventListener('keyup', onKeyUp)
     canvas.addEventListener('pointerdown', onPointerDown, true)
     canvas.addEventListener('pointermove', onPointerMove)
     canvas.addEventListener('pointerup', onPointerUp)
 
     return () => {
       unsub1(); unsub2()
-      window.removeEventListener('keydown', onKeyDown)
-      window.removeEventListener('keyup', onKeyUp)
       canvas.removeEventListener('pointerdown', onPointerDown, true)
       canvas.removeEventListener('pointermove', onPointerMove)
       canvas.removeEventListener('pointerup', onPointerUp)
