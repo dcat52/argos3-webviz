@@ -36,6 +36,10 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function Inspector({ entity }: { entity: AnyEntity }) {
+  const { debugPinnedIds, toggleDebugPin } = useExperimentStore(
+    useShallow((s) => ({ debugPinnedIds: s.debugPinnedIds, toggleDebugPin: s.toggleDebugPin }))
+  )
+  const isPinned = debugPinnedIds.has(entity.id)
   if (!('position' in entity)) return null
   return (
     <Section title="Inspector">
@@ -45,6 +49,12 @@ function Inspector({ entity }: { entity: AnyEntity }) {
         <Row label="Position" value={fv(entity.position)} />
         <Row label="Orientation" value={fq(entity.orientation)} />
         {'leds' in entity && entity.leds && <Row label="LEDs" value={String(entity.leds.length)} />}
+        <button
+          onClick={() => toggleDebugPin(entity.id)}
+          className={`w-full text-xs rounded px-2 py-1 mt-1 ${isPinned ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
+        >
+          {isPinned ? '🔍 Debug Pinned' : '🔍 Pin Debug View'}
+        </button>
         {entity.user_data !== undefined && (
           <div className="pt-1">
             <span className="text-xs text-muted-foreground">User Data</span>

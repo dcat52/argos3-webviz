@@ -31,6 +31,7 @@ interface ExperimentState_ {
   userData: unknown
   selectedEntityId: string | null
   dragEntityId: string | null
+  debugPinnedIds: Set<string>
   applyBroadcast: (msg: BroadcastMessage) => void
   applySchema: (msg: SchemaMessage) => void
   applyDelta: (msg: DeltaMessage) => void
@@ -39,6 +40,7 @@ interface ExperimentState_ {
   startDrag: (id: string) => void
   endDrag: () => void
   updateDragPosition: (pos: Vec3) => void
+  toggleDebugPin: (id: string) => void
 }
 
 export const useExperimentStore = create<ExperimentState_>((set, get) => ({
@@ -55,6 +57,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   userData: undefined,
   selectedEntityId: null,
   dragEntityId: null,
+  debugPinnedIds: new Set(),
 
   applyBroadcast: (msg) => {
     const prev = get().entities
@@ -149,6 +152,12 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   selectEntity: (id) => set({ selectedEntityId: id }),
+
+  toggleDebugPin: (id) => {
+    const next = new Set(get().debugPinnedIds)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    set({ debugPinnedIds: next })
+  },
 
   startDrag: (id) => {
     set({ dragEntityId: id, selectedEntityId: id })

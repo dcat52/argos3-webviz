@@ -134,6 +134,16 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
               <Row label="Shadows">
                 <Switch checked={s.shadows} onCheckedChange={(v) => s.set({ shadows: v })} />
               </Row>
+              <Row label="Render Tier">
+                <Select value={String(s.renderTier)} onValueChange={(v) => s.set({ renderTier: Number(v) as 1 | 2 | 3 })}>
+                  <SelectTrigger className="h-7 w-24 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1" className="text-xs">Overview</SelectItem>
+                    <SelectItem value="2" className="text-xs">Standard</SelectItem>
+                    <SelectItem value="3" className="text-xs">Debug</SelectItem>
+                  </SelectContent>
+                </Select>
+              </Row>
               <Row label="Pixel Ratio">
                 <Select value={String(s.pixelRatio)} onValueChange={(v) => s.set({ pixelRatio: Number(v) })}>
                   <SelectTrigger className="h-7 w-20 text-xs"><SelectValue /></SelectTrigger>

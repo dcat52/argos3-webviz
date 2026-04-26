@@ -6,6 +6,8 @@ import { memoryStorage } from '@/lib/memoryStorage'
 
 interface SpeedOption { value: number; label: string }
 
+export type RenderTier = 1 | 2 | 3
+
 interface SettingsState {
   // Connection
   wsUrl: string
@@ -17,6 +19,7 @@ interface SettingsState {
   pixelRatio: number
   fov: number
   orthographic: boolean
+  renderTier: RenderTier
   // Camera
   cameraMinDistance: number
   cameraMaxDistanceMultiplier: number
@@ -49,6 +52,7 @@ const defaults = {
   pixelRatio: 1,
   fov: CAMERA.fov,
   orthographic: false,
+  renderTier: 2 as RenderTier,
   cameraMinDistance: CAMERA.minDistance,
   cameraMaxDistanceMultiplier: CAMERA.maxDistanceMultiplier,
   cameraSmoothTime: CAMERA.smoothTime,

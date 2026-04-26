@@ -110,10 +110,11 @@ function GlCapture() {
 
 
 function SceneEntities() {
-  const { entities, selectedEntityId, selectEntity, startDrag } = useExperimentStore(
-    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity, startDrag: s.startDrag }))
+  const { entities, selectedEntityId, selectEntity, startDrag, debugPinnedIds } = useExperimentStore(
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity, startDrag: s.startDrag, debugPinnedIds: s.debugPinnedIds }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
+  const globalTier = useSettingsStore((s) => s.renderTier)
   const colorMap = useColorByMap()
 
   useDrag()
@@ -124,10 +125,10 @@ function SceneEntities() {
     }
   }, [flyTo])
 
-  // Split entities into instanced vs individual
-  // Split entities: robots with >INDIVIDUAL_THRESHOLD go to instanced, rest rendered individually
+  // Tier >= 2 means all robots render individually (detailed model)
+  // Tier 1 uses instancing for large groups
   const individual = useMemo(() => {
-    // Count per instanced type
+    if (globalTier >= 2) return Array.from(entities.values())
     const counts = new Map<string, number>()
     for (const e of entities.values()) {
       if (INSTANCED_TYPES.has(e.type)) counts.set(e.type, (counts.get(e.type) ?? 0) + 1)
@@ -136,11 +137,17 @@ function SceneEntities() {
       if (!INSTANCED_TYPES.has(e.type)) return true
       return (counts.get(e.type) ?? 0) <= INDIVIDUAL_THRESHOLD
     })
-  }, [entities])
+  }, [entities, globalTier])
+
+  const effectiveTier = useCallback((id: string) => {
+    if (debugPinnedIds.has(id)) return 3 as const
+    if (id === selectedEntityId) return Math.min(globalTier + 1, 3) as 1 | 2 | 3
+    return globalTier
+  }, [globalTier, selectedEntityId, debugPinnedIds])
 
   return (
     <>
-      <InstancedEntities colorMap={colorMap} />
+      {globalTier === 1 && <InstancedEntities colorMap={colorMap} />}
       <GhostPreview />
       {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
@@ -148,6 +155,7 @@ function SceneEntities() {
             <EntityRenderer
               entity={entity}
               selected={entity.id === selectedEntityId}
+              tier={effectiveTier(entity.id)}
               onClick={() => selectEntity(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
               onPointerDown={(e: any) => { e.stopPropagation(); startDrag(entity.id) }}

@@ -50,14 +50,13 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-| PN | Title | Status | Effort | GitHub Issue |
-|----|-------|--------|--------|-------------|
-| PN-021 | [Render Tiers](PN-021-render-tiers.md) | 📋 INVESTIGATION | ~4h | — |
+None — all proposals complete.
 
 ## Completed Proposals
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-021 | Render Tiers | 2026-04-26 |
 | PN-020 | Feature Registry | 2026-04-26 |
 | PN-019 | Entity Manipulation & Spawning | 2026-04-26 |
 | PN-018 | Timeline Scrubber | 2026-04-21 |

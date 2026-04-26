@@ -4,7 +4,7 @@ Created: 2026-04-26
 Baseline Commit: `4d45882` (`master`)
 GitHub Issue: N/A
 
-## Status: 📋 INVESTIGATION
+## Status: ✅ COMPLETE
 <!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -124,13 +124,13 @@ A `renderTier` setting in the settings store controls the global default. Each e
 
 ## Done When
 
-- [ ] Global render tier setting (Overview / Standard / Debug) in settings
-- [ ] FootBot renders conditionally: body+LEDs (T1), +model detail (T2), +rays (T3)
-- [ ] KheperaIV same pattern
-- [ ] Selected entity auto-promotes one tier
-- [ ] Debug pin toggle in entity inspector
-- [ ] Instanced rendering disabled when global tier ≥ Standard
-- [ ] No regressions — tests pass, tsc clean
+- [x] Global render tier setting (Overview / Standard / Debug) in settings
+- [x] FootBot renders conditionally: body+LEDs (T1), +model detail (T2), +rays (T3)
+- [x] KheperaIV same pattern
+- [x] Selected entity auto-promotes one tier
+- [x] Debug pin toggle in entity inspector
+- [x] Instanced rendering disabled when global tier ≥ Standard
+- [x] No regressions — tests pass, tsc clean
 
 ## Verification Strategy
 
@@ -166,3 +166,4 @@ A `renderTier` setting in the settings store controls the global default. Each e
 | Date | Change | Phase |
 |------|--------|-------|
 | 2026-04-26 | Initial investigation — tier concept, design, file references | 📋 INVESTIGATION |
+| 2026-04-26 | Implemented: tier setting, conditional renderers, auto-promote, debug pin, settings UI | ✅ COMPLETE |
