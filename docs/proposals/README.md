@@ -50,7 +50,9 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-None — all proposals complete.
+| PN | Title | Status |
+|----|-------|--------|
+| PN-022 | [Proximity Ray Frame Fix](PN-022-proximity-ray-frame-fix.md) | 🟣 VERIFICATION |
 
 ## Completed Proposals
 

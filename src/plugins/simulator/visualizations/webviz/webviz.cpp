@@ -1006,6 +1006,17 @@ namespace argos {
       CVector3 cOldPos = pcEntity->GetOriginAnchor().Position;
       if (pcEntity->MoveTo(c_pos, c_orientation)) {
         LOG << "[INFO] Entity Moved (" + str_entity_id + ")" << '\n';
+
+        /* Clear stale sensor rays — they were computed at the old position
+         * and would appear offset if broadcast before the next UpdateSpace() */
+        CComposableEntity* pcComp = dynamic_cast<CComposableEntity*>(cEntity);
+        if (pcComp != NULL && pcComp->HasComponent("controller")) {
+          pcComp->GetComponent<CControllableEntity>("controller")
+            .GetCheckedRays().clear();
+          pcComp->GetComponent<CControllableEntity>("controller")
+            .GetIntersectionPoints().clear();
+        }
+
         /* Call user function hook */
         if (m_pcUserFunctions != nullptr) {
           m_pcUserFunctions->EntityMoved(*cEntity, cOldPos, c_pos);

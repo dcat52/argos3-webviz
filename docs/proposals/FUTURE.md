@@ -29,3 +29,4 @@ These are behind feature flags and need polish before becoming stable:
 ## External / Out of Scope
 - **Spiri entity** — external plugin, not in this repo
 - **glTF foot-bot model** — upgrade from procedural to loaded model (future)
+- **ARGoS core: post-physics sensor re-read** — a hook in the ARGoS simulator to let visualizations request sensor data recomputed after physics steps. Would give "true" post-physics rays but requires changes to the ARGoS core repo. The local webviz fix (PN-022) handles the visual mismatch without this. Discovered during PN-022 investigation.
