@@ -5,6 +5,7 @@ import { useExperimentStore } from './experimentStore'
 import { useLogStore } from './logStore'
 import { useRecordingStore } from './recordingStore'
 import { useSettingsStore } from './settingsStore'
+import { useMetadataStore } from './metadataStore'
 import { SPEED_INFINITY_THRESHOLD, SPEED_TRANSITION_DELAY_MS } from '@/lib/defaults'
 
 interface ConnectionState {
@@ -22,6 +23,9 @@ interface ConnectionState {
   fastForward: (steps?: number) => void
   playAtSpeed: (speed: number) => void
   moveEntity: (id: string, pos: Vec3, orient: Quaternion) => void
+  addEntity: (params: Record<string, unknown>) => void
+  removeEntity: (id: string) => void
+  requestMetadata: () => void
 }
 
 export const useConnectionStore = create<ConnectionState>((set, get) => ({
@@ -39,7 +43,12 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
       channels: ['broadcasts', 'events', 'logs'],
     })
 
-    conn.onStatusChange = (status) => set({ status })
+    conn.onStatusChange = (status) => {
+      set({ status })
+      if (status === 'connected') {
+        get().requestMetadata()
+      }
+    }
 
     conn.onMessage = (msg) => {
       switch (msg.type) {
@@ -48,9 +57,19 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
         case 'delta':
           useExperimentStore.getState().applyMessage(msg)
           if (msg.type === 'broadcast') useRecordingStore.getState().captureFrame(msg)
+          // Extract metadata from broadcast/schema messages
+          if ('controllers' in (msg as any) && 'entity_types' in (msg as any)) {
+            const m = msg as any
+            if (!useMetadataStore.getState().loaded) {
+              useMetadataStore.getState().applyMetadata(m)
+            }
+          }
           break
         case 'log':
           useLogStore.getState().addMessages(msg.messages)
+          break
+        case 'metadata':
+          useMetadataStore.getState().applyMetadata(msg as any)
           break
       }
     }
@@ -86,4 +105,10 @@ export const useConnectionStore = create<ConnectionState>((set, get) => ({
   },
   moveEntity: (id, pos, orient) =>
     get().send({ command: 'moveEntity', entity_id: id, position: pos, orientation: orient }),
+  addEntity: (params) =>
+    get().send({ command: 'addEntity', ...params } as any),
+  removeEntity: (id) =>
+    get().send({ command: 'removeEntity', entity_id: id }),
+  requestMetadata: () =>
+    get().send({ command: 'getMetadata' }),
 }))

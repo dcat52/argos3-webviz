@@ -12,38 +12,35 @@ function parseRay(ray: string) {
   return { hit: checked === 'true', start: s, end: e }
 }
 
-export function LeoRenderer({ entity, selected, onClick, onDoubleClick, overrideColor }: EntityRendererProps) {
+export function LeoRenderer({ entity, selected, ghost, tier, onClick, onDoubleClick, onPointerDown, overrideColor }: EntityRendererProps) {
   const e = entity as LeoEntity
   const { position: p, orientation: q } = e
+  const t = tier ?? 2
 
   const bodyGeo = useMemo(() => new THREE.CylinderGeometry(0.30, 0.30, 0.12, 24), [])
   const dirGeo = useMemo(() => new THREE.SphereGeometry(0.04, 8, 8), [])
-  const rays = useMemo(() => e.rays.map(parseRay), [e.rays])
+  const rays = useMemo(() => t >= 3 ? e.rays.map(parseRay) : [], [e.rays, t])
 
   return (
-    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick}>
+    <group position={[p.x, p.y, p.z]} quaternion={[q.x, q.y, q.z, q.w]} onClick={onClick} onDoubleClick={onDoubleClick} onPointerDown={onPointerDown}>
+      {/* Tier 1+: Body */}
       <mesh geometry={bodyGeo} rotation={[Math.PI / 2, 0, 0]} castShadow receiveShadow>
         <meshPhysicalMaterial
-          color={overrideColor ?? (selected ? '#6e8e6e' : '#5a6e5a')}
-          metalness={0.05}
-          roughness={0.8}
+          color={overrideColor ?? (ghost ? '#64C8FF' : (selected ? '#6e8e6e' : '#5a6e5a'))}
+          metalness={0.05} roughness={0.8} transparent={ghost} opacity={ghost ? 0.3 : 1} depthWrite={!ghost}
         />
       </mesh>
 
-      {/* Direction indicator */}
-      <mesh geometry={dirGeo} position={[0.20, 0, 0.06]}>
+      {/* Tier 2+: Direction indicator */}
+      {t >= 2 && <mesh geometry={dirGeo} position={[0.20, 0, 0.06]}>
         <meshStandardMaterial color="#333" />
-      </mesh>
+      </mesh>}
 
+      {/* Tier 3: Debug rays */}
       {rays.map((ray, i) => (
-        <Line
-          key={`ray-${i}`}
-          points={[ray.start, ray.end]}
+        <Line key={`ray-${i}`} points={[ray.start, ray.end]}
           color={ray.hit ? useSettingsStore.getState().rayHitColor : useSettingsStore.getState().rayMissColor}
-          lineWidth={1}
-          transparent
-          opacity={0.5}
-        />
+          lineWidth={1} transparent opacity={0.5} />
       ))}
     </group>
   )

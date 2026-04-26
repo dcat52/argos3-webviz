@@ -9,7 +9,7 @@ import { memoryStorage } from '@/lib/memoryStorage'
 export interface VizConfig {
   colorBy: { enabled: boolean; field: string; scale: 'linear' | 'categorical'; colorA: string; colorB: string } | null
   links: { enabled: boolean; field: string; color: string; opacity: number } | null
-  labels: { enabled: boolean; field: string }[]
+  labels: { enabled: boolean; field: string; display?: 'text' | 'bar' | 'badge' }[]
   trails: { enabled: boolean; length: number; opacity: number }
   heatmap: { enabled: boolean; resolution: number; decay: number; colorA: string; colorB: string }
 }

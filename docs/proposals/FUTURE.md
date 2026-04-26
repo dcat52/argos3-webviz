@@ -1,62 +1,32 @@
-# Future Proposals — Discovered During Canopy Integration
+# Future Ideas
 
-Baseline: `c55a30a` (`client-next`) — post PN-009
-Created: 2026-04-15, updated 2026-04-19
-
----
-
-## Needs Discussion
-
-### PN-015: HealthWebviz + Per-Robot Status Icons
-
-**Goal**: Webviz user functions for E_health, with battery-style health
-icons floating above each robot.
-
-**Open questions**:
-- Battery icon vs colored circle vs health bar?
-- Show other robots' estimates of health (dimmer/outline)?
-- How does this generalize to other per-robot indicators?
-
-**Effort**: TBD
+Ideas discovered during development that don't yet have proposals.
 
 ---
 
-## Future
+## Polish / Improvements
 
-### PN-018: Timeline Scrubber / Replay Seek
+### Distribute Spawn UX
+The distribute spawn mode works but needs UX polish — click-to-set-center, visual bounds indicator, better parameter layout.
 
-**Goal**: Scrub through recorded simulation history.
+### Entity Rotation
+Post-spawn rotation handle or angle slider in the inspector. Drag-to-aim works for spawn, but no way to rotate an already-placed entity without re-spawning.
 
-**Status**: 🟣 VERIFICATION — PR open
+### Entity Inspection Panel
+Deeper per-agent insight — click an entity to see its full state, sensors, controller, user_data, computed fields. Richer than the current minimal sidebar inspector.
 
-**Effort**: ~3.5 hrs | Medium complexity
-**Dependencies**: PN-003
+### Workspace Presets
+Broader preset concept: bundle camera position, viz settings, panel layout, feature flags into named configurations. Current viz-only presets are a narrow first version.
 
----
+## Experimental Feature Graduation
+These are behind feature flags and need polish before becoming stable:
+- **Color-by** — works for agents now, needs better UX for field selection
+- **Heatmap** — decent, needs performance tuning for large swarms
+- **Trails** — decent, works as-is
+- **Distribute** — functional but UX needs work
+- **Viz Presets** — depends on other experimental features
 
-## Completed
-
-| PN | Title | Completed |
-|----|-------|-----------|
-| PN-001 | Client-Next Default | 2026-04-13 |
-| PN-002 | Delta Protocol | 2026-04-13 |
-| PN-003 | Recorder / Replay | 2026-04-13 |
-| PN-004 | Viz System | 2026-04-14 |
-| PN-005 | Computed Fields | 2026-04-14 |
-| PN-006 | Benchmarking & Testing | 2026-04-14 |
-| PN-007 | Leo Renderer | 2026-04-14 |
-| PN-008 | Draw Primitives | 2026-04-15 |
-| PN-009 | Integration Fixes | 2026-04-15 |
-| PN-010 | Viewport Polish | 2026-04-19 |
-| PN-011 | Entity Body Color | 2026-04-19 |
-| PN-012 | Configurable Defaults | 2026-04-19 |
-| PN-013 | Floating Panels | 2026-04-19 |
-| PN-014 | Speed Control | 2026-04-19 |
-| PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
-
-## Summary
-
-| PN | Title | Status | Effort |
-|----|-------|--------|--------|
-| PN-015 | HealthWebviz + Status Icons | 📋 Needs discussion | TBD |
-| PN-018 | Timeline Scrubber | 📋 Future | 4 hr |
+## External / Out of Scope
+- **Spiri entity** — external plugin, not in this repo
+- **glTF foot-bot model** — upgrade from procedural to loaded model (future)
+- **ARGoS core: post-physics sensor re-read** — a hook in the ARGoS simulator to let visualizations request sensor data recomputed after physics steps. Would give "true" post-physics rays but requires changes to the ARGoS core repo. The local webviz fix (PN-022) handles the visual mismatch without this. Discovered during PN-022 investigation.

@@ -11,6 +11,7 @@ import { ChevronRight, Download, Upload } from 'lucide-react'
 import type { FieldSchema } from '@/lib/vizEngine'
 import { vizPresets, getAvailablePresets } from '@/lib/vizPresets'
 import { VIZ_DEFAULTS } from '@/lib/defaults'
+import { useFeature } from '@/stores/featureStore'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -45,6 +46,10 @@ export function VizConfigPanel() {
     useShallow((s) => ({ fields: s.fields, config: s.config, setConfig: s.setConfig, loadPreset: s.loadPreset, exportConfig: s.exportConfig, importConfig: s.importConfig }))
   )
   const importRef = useRef<HTMLInputElement>(null)
+  const colorByEnabled = useFeature('color-by')
+  const heatmapEnabled = useFeature('heatmap')
+  const trailsEnabled = useFeature('trails')
+  const presetsEnabled = useFeature('viz-presets')
 
   const availablePresets = getAvailablePresets(fields.map(f => f.fieldName))
 
@@ -78,7 +83,7 @@ export function VizConfigPanel() {
         </CollapsibleTrigger>
         <CollapsibleContent className="space-y-1">
 
-      <Section title="Presets">
+      {presetsEnabled && <Section title="Presets">
         <Select onValueChange={(id) => {
           const preset = vizPresets.find(p => p.id === id)
           if (preset) loadPreset(preset.config)
@@ -101,9 +106,9 @@ export function VizConfigPanel() {
           </Button>
           <input ref={importRef} type="file" accept=".json" className="hidden" onChange={handleImport} />
         </div>
-      </Section>
+      </Section>}
 
-      <Section title="Color By">
+      {colorByEnabled && <Section title="Color By">
         <div className="flex items-center gap-2">
           <Switch checked={config.colorBy?.enabled ?? false} onCheckedChange={(v) => updateColorBy({ enabled: v })} />
           <Label className="text-xs">Enable</Label>
@@ -120,7 +125,7 @@ export function VizConfigPanel() {
           <ColorInput value={config.colorBy?.colorA ?? '#0000ff'} onChange={(v) => updateColorBy({ colorA: v })} />
           <ColorInput value={config.colorBy?.colorB ?? '#ff0000'} onChange={(v) => updateColorBy({ colorB: v })} />
         </div>
-      </Section>
+      </Section>}
 
       <Section title="Links">
         <div className="flex items-center gap-2">
@@ -144,17 +149,27 @@ export function VizConfigPanel() {
                 checked={active?.enabled ?? false}
                 onCheckedChange={(v) => {
                   const next = config.labels.filter((l) => l.field !== f.fieldName)
-                  if (v) next.push({ enabled: true, field: f.fieldName })
+                  if (v) next.push({ enabled: true, field: f.fieldName, display: f.type === 'number' ? 'bar' : 'text' })
                   setConfig({ labels: next })
                 }}
               />
-              <Label className="text-xs">{f.fieldName}</Label>
+              <Label className="text-xs flex-1">{f.fieldName}</Label>
+              {active?.enabled && (
+                <select className="h-5 text-[10px] bg-background border rounded px-1" value={active.display ?? 'text'} onChange={(e) => {
+                  const next = config.labels.map((l) => l.field === f.fieldName ? { ...l, display: e.target.value as 'text' | 'bar' | 'badge' } : l)
+                  setConfig({ labels: next })
+                }}>
+                  <option value="text">Text</option>
+                  {f.type === 'number' && <option value="bar">Bar</option>}
+                  <option value="badge">Badge</option>
+                </select>
+              )}
             </div>
           )
         })}
       </Section>
 
-      <Section title="Trails">
+      {trailsEnabled && <Section title="Trails">
         <div className="flex items-center gap-2">
           <Switch checked={config.trails.enabled} onCheckedChange={(v) => setConfig({ trails: { ...config.trails, enabled: v } })} />
           <Label className="text-xs">Enable</Label>
@@ -168,9 +183,9 @@ export function VizConfigPanel() {
           <Label className="text-xs">Opacity</Label>
           <Slider min={0} max={1} step={0.1} value={[config.trails.opacity]} onValueChange={([v]) => setConfig({ trails: { ...config.trails, opacity: v } })} className="flex-1" />
         </div>
-      </Section>
+      </Section>}
 
-      <Section title="Heatmap">
+      {heatmapEnabled && <Section title="Heatmap">
         <div className="flex items-center gap-2">
           <Switch checked={config.heatmap.enabled} onCheckedChange={(v) => setConfig({ heatmap: { ...config.heatmap, enabled: v } })} />
           <Label className="text-xs">Enable</Label>
@@ -184,7 +199,7 @@ export function VizConfigPanel() {
           <ColorInput value={config.heatmap.colorA} onChange={(v) => setConfig({ heatmap: { ...config.heatmap, colorA: v } })} />
           <ColorInput value={config.heatmap.colorB} onChange={(v) => setConfig({ heatmap: { ...config.heatmap, colorB: v } })} />
         </div>
-      </Section>
+      </Section>}
         </CollapsibleContent>
       </Collapsible>
     </div>

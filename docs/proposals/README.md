@@ -50,14 +50,18 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-| PN | Title | Status | Effort | GitHub Issue |
-|----|-------|--------|--------|-------------|
-| PN-018 | [Timeline Scrubber](PN-018-timeline-scrubber.md) | 🟣 VERIFICATION | ~3.5h | — |
+| PN | Title | Status |
+|----|-------|--------|
+| PN-022 | [Proximity Ray Frame Fix](PN-022-proximity-ray-frame-fix.md) | 🟣 VERIFICATION |
 
 ## Completed Proposals
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-021 | Render Tiers | 2026-04-26 |
+| PN-020 | Feature Registry | 2026-04-26 |
+| PN-019 | Entity Manipulation & Spawning | 2026-04-26 |
+| PN-018 | Timeline Scrubber | 2026-04-21 |
 | PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
 | PN-014 | Speed Control | 2026-04-19 |
 | PN-013 | Floating Panels | 2026-04-19 |

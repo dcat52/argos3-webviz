@@ -5,12 +5,12 @@ function parseHex(hex: string): string {
   return '#' + hex.slice(2)
 }
 
-export function LightRenderer({ entity, onClick, onDoubleClick }: EntityRendererProps) {
+export function LightRenderer({ entity, onClick, onDoubleClick, onPointerDown }: EntityRendererProps) {
   const e = entity as LightEntity
   const { position: p } = e
   const color = parseHex(e.color)
   return (
-    <group position={[p.x, p.y, p.z]} onClick={onClick} onDoubleClick={onDoubleClick}>
+    <group position={[p.x, p.y, p.z]} onClick={onClick} onDoubleClick={onDoubleClick} onPointerDown={onPointerDown}>
       <mesh>
         <sphereGeometry args={[0.03, 16, 16]} />
         <meshStandardMaterial

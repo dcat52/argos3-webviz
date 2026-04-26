@@ -2,12 +2,26 @@ import { useEffect } from 'react'
 import { useConnectionStore } from '@/stores/connectionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useRecordingStore } from '@/stores/recordingStore'
+import { useInteractionStore } from '@/stores/interactionStore'
+import { usePlacementStore } from '@/stores/placementStore'
 import { ExperimentState } from '@/types/protocol'
 
 export function useKeyboardShortcuts() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.target as HTMLElement).tagName === 'INPUT' || (e.target as HTMLElement).tagName === 'SELECT') return
+
+      // Escape: cancel place mode, or deselect
+      if (e.code === 'Escape') {
+        const mode = useInteractionStore.getState().mode
+        if (mode === 'place') {
+          usePlacementStore.getState().cancelPlacement()
+          useInteractionStore.getState().setMode('select')
+          return
+        }
+        useExperimentStore.getState().selectEntity(null)
+        return
+      }
 
       const recording = useRecordingStore.getState()
 

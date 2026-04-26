@@ -15,17 +15,20 @@ import { EntityRenderer } from '../entities/EntityRenderer'
 import { EnvironmentPreset } from './EnvironmentPreset'
 import { CameraController } from './CameraController'
 import { SelectionRing } from './SelectionRing'
+import { GhostPreview } from './GhostPreview'
+import { useDrag } from '../hooks/useDrag'
 import { FPSCounter } from './FPSCounter'
 import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
 import { HeatmapOverlay } from './HeatmapOverlay'
+import { useFeature } from '@/stores/featureStore'
 import { FloatingLabels } from './FloatingLabels'
 import { DrawOverlays } from './DrawOverlays'
 import { DynamicFloor } from './DynamicFloor'
 import { ScaleBarUpdater, ScaleBarOverlay } from './ScaleBar'
-import { InstancedEntities } from './InstancedEntities'
+import { InstancedEntities, INSTANCED_TYPES, INDIVIDUAL_THRESHOLD } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
-import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
+import { linearScale, categoricalScale } from '../lib/colorScales'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
 
 function ArenaBounds({ arena }: { arena: ArenaInfo }) {
@@ -42,33 +45,51 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
 
 function useFieldDiscovery() {
   const entities = useExperimentStore((s) => s.entities)
+  const computedFields = useExperimentStore((s) => s.computedFields)
   const setFields = useVizConfigStore((s) => s.setFields)
   const applyHints = useVizConfigStore((s) => s.applyHints)
   const userData = useExperimentStore((s) => s.userData)
 
   useEffect(() => {
-    const fields = discoverFields(entities)
+    const fields = discoverFields(entities, computedFields)
     setFields(fields)
     if (userData && typeof userData === 'object' && '_viz_hints' in (userData as Record<string, unknown>)) {
       applyHints((userData as Record<string, unknown>)._viz_hints as Record<string, unknown>)
     }
-  }, [entities, setFields, applyHints, userData])
+  }, [entities, computedFields, setFields, applyHints, userData])
 }
+
+const AGENT_TYPES = new Set(['foot-bot', 'kheperaiv', 'Leo'])
 
 export function useColorByMap(): Map<string, string> {
   const entities = useExperimentStore((s) => s.entities)
+  const computedFields = useExperimentStore((s) => s.computedFields)
   const colorBy = useVizConfigStore((s) => s.config.colorBy)
 
   return useMemo(() => {
     const map = new Map<string, string>()
     if (!colorBy?.enabled || !colorBy.field) return map
 
-    const [min, max] = colorBy.scale === 'linear' ? computeMinMax(entities, colorBy.field) : [0, 1]
+    const isComputed = colorBy.field.startsWith('_')
+
+    // Compute min/max for linear scale (agents only)
+    let min = Infinity, max = -Infinity
+    if (colorBy.scale === 'linear') {
+      for (const entity of entities.values()) {
+        if (!AGENT_TYPES.has(entity.type)) continue
+        const val = isComputed
+          ? computedFields.get(entity.id)?.[colorBy.field]
+          : ('user_data' in entity && entity.user_data ? (entity.user_data as Record<string, unknown>)[colorBy.field] : undefined)
+        if (typeof val === 'number') { min = Math.min(min, val); max = Math.max(max, val) }
+      }
+      if (min === Infinity) { min = 0; max = 1 }
+    }
 
     for (const entity of entities.values()) {
-      if (!('user_data' in entity) || !entity.user_data) continue
-      const ud = entity.user_data as Record<string, unknown>
-      const val = ud[colorBy.field]
+      if (!AGENT_TYPES.has(entity.type)) continue
+      const val = isComputed
+        ? computedFields.get(entity.id)?.[colorBy.field]
+        : ('user_data' in entity && entity.user_data ? (entity.user_data as Record<string, unknown>)[colorBy.field] : undefined)
       if (val === undefined) continue
       if (colorBy.scale === 'linear' && typeof val === 'number') {
         map.set(entity.id, linearScale(val, min, max, colorBy.colorA, colorBy.colorB))
@@ -77,7 +98,7 @@ export function useColorByMap(): Map<string, string> {
       }
     }
     return map
-  }, [entities, colorBy])
+  }, [entities, computedFields, colorBy])
 }
 
 function GlCapture() {
@@ -87,14 +108,16 @@ function GlCapture() {
   return null
 }
 
-const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 
 function SceneEntities() {
-  const { entities, selectedEntityId, selectEntity } = useExperimentStore(
-    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
+  const { entities, selectedEntityId, debugPinnedIds } = useExperimentStore(
+    useShallow((s) => ({ entities: s.entities, selectedEntityId: s.selectedEntityId, debugPinnedIds: s.debugPinnedIds }))
   )
   const flyTo = useCameraStore((s) => s.flyTo)
+  const globalTier = useSettingsStore((s) => s.renderTier)
   const colorMap = useColorByMap()
+
+  useDrag()
 
   const handleDoubleClick = useCallback((entity: AnyEntity) => {
     if ('position' in entity) {
@@ -102,22 +125,37 @@ function SceneEntities() {
     }
   }, [flyTo])
 
-  // Split entities into instanced vs individual
-  const individual = useMemo(() =>
-    Array.from(entities.values()).filter((e) => !INSTANCED_TYPES.has(e.type)),
-    [entities]
-  )
+  // Tier >= 2 means all robots render individually (detailed model)
+  // Tier 1 uses instancing for large groups
+  const individual = useMemo(() => {
+    if (globalTier >= 2) return Array.from(entities.values())
+    const counts = new Map<string, number>()
+    for (const e of entities.values()) {
+      if (INSTANCED_TYPES.has(e.type)) counts.set(e.type, (counts.get(e.type) ?? 0) + 1)
+    }
+    return Array.from(entities.values()).filter((e) => {
+      if (!INSTANCED_TYPES.has(e.type)) return true
+      return (counts.get(e.type) ?? 0) <= INDIVIDUAL_THRESHOLD
+    })
+  }, [entities, globalTier])
+
+  const effectiveTier = useCallback((id: string) => {
+    if (debugPinnedIds.has(id)) return 3 as const
+    if (id === selectedEntityId) return Math.min(globalTier + 1, 3) as 1 | 2 | 3
+    return globalTier
+  }, [globalTier, selectedEntityId, debugPinnedIds])
 
   return (
     <>
-      <InstancedEntities colorMap={colorMap} />
+      {globalTier === 1 && <InstancedEntities colorMap={colorMap} />}
+      <GhostPreview />
       {individual.map((entity: AnyEntity) =>
         'position' in entity ? (
-          <group key={entity.id}>
+          <group key={entity.id} name={entity.id}>
             <EntityRenderer
               entity={entity}
               selected={entity.id === selectedEntityId}
-              onClick={() => selectEntity(entity.id)}
+              tier={effectiveTier(entity.id)}
               onDoubleClick={() => handleDoubleClick(entity)}
               overrideColor={colorMap.get(entity.id)}
             />
@@ -139,6 +177,8 @@ function SceneContent() {
   const arena = useExperimentStore((s) => s.arena)
   const drawCommands = useExperimentStore((s) => s.drawCommands)
   const floorData = useExperimentStore((s) => s.floorData)
+  const trailsEnabled = useFeature('trails')
+  const heatmapEnabled = useFeature('heatmap')
   useFieldDiscovery()
 
   return (
@@ -147,8 +187,8 @@ function SceneContent() {
       <CameraController />
       <SceneEntities />
       <EntityLinks />
-      <TrailRenderer />
-      <HeatmapOverlay />
+      {trailsEnabled && <TrailRenderer />}
+      {heatmapEnabled && <HeatmapOverlay />}
       <FloatingLabels />
       <DrawOverlays commands={drawCommands} />
       {floorData && arena && <DynamicFloor floorData={floorData} arena={arena} />}

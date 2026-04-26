@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid } from '../types/protocol'
+import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type Vec3, type Quaternion } from '../types/protocol'
 import { computeFields } from '../lib/computedFields'
 
 function extractDraw(userData: unknown): DrawCommand[] {
@@ -30,11 +30,18 @@ interface ExperimentState_ {
   floorData: FloorColorGrid | null
   userData: unknown
   selectedEntityId: string | null
+  dragEntityId: string | null
+  debugPinnedIds: Set<string>
   applyBroadcast: (msg: BroadcastMessage) => void
   applySchema: (msg: SchemaMessage) => void
   applyDelta: (msg: DeltaMessage) => void
   applyMessage: (msg: BroadcastMessage | SchemaMessage | DeltaMessage) => void
   selectEntity: (id: string | null) => void
+  startDrag: (id: string) => void
+  endDrag: () => void
+  updateDragPosition: (pos: Vec3) => void
+  updateDragOrientation: (orient: Quaternion) => void
+  toggleDebugPin: (id: string) => void
 }
 
 export const useExperimentStore = create<ExperimentState_>((set, get) => ({
@@ -50,11 +57,19 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   floorData: null,
   userData: undefined,
   selectedEntityId: null,
+  dragEntityId: null,
+  debugPinnedIds: new Set(),
 
   applyBroadcast: (msg) => {
     const prev = get().entities
     const next = new Map<string, AnyEntity>()
+    const dragId = get().dragEntityId
     for (const entity of msg.entities) {
+      // Keep local position for entity being dragged
+      if (dragId && entity.id === dragId) {
+        const local = prev.get(dragId)
+        if (local) { next.set(entity.id, { ...entity, position: local.position } as AnyEntity); continue }
+      }
       next.set(entity.id, entity)
     }
     set({
@@ -106,6 +121,13 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       }
     }
 
+    // Handle removed entities
+    if (msg.removed) {
+      for (const id of msg.removed) {
+        next.delete(id)
+      }
+    }
+
     const arena = msg.arena ?? get().arena
     set({
       state: msg.state ?? get().state,
@@ -131,4 +153,38 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   selectEntity: (id) => set({ selectedEntityId: id }),
+
+  toggleDebugPin: (id) => {
+    const next = new Set(get().debugPinnedIds)
+    if (next.has(id)) next.delete(id); else next.add(id)
+    set({ debugPinnedIds: next })
+  },
+
+  startDrag: (id) => {
+    set({ dragEntityId: id, selectedEntityId: id })
+  },
+
+  endDrag: () => {
+    set({ dragEntityId: null })
+  },
+
+  updateDragPosition: (pos) => {
+    const { dragEntityId, entities } = get()
+    if (!dragEntityId) return
+    const entity = entities.get(dragEntityId)
+    if (!entity || !('position' in entity)) return
+    const next = new Map(entities)
+    next.set(dragEntityId, { ...entity, position: pos } as AnyEntity)
+    set({ entities: next })
+  },
+
+  updateDragOrientation: (orient) => {
+    const { dragEntityId, entities } = get()
+    if (!dragEntityId) return
+    const entity = entities.get(dragEntityId)
+    if (!entity || !('orientation' in entity)) return
+    const next = new Map(entities)
+    next.set(dragEntityId, { ...entity, orientation: orient } as AnyEntity)
+    set({ entities: next })
+  },
 }))

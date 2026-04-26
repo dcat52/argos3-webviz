@@ -17,6 +17,8 @@ import { useCanvasRef } from '@/stores/canvasRefStore'
 import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
 import { usePanelStore } from '@/stores/panelStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useInteractionStore } from '@/stores/interactionStore'
+import { Pencil } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -94,6 +96,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const videoDuration = useVideoRecordingStore((s) => s.duration)
   const startVideo = useVideoRecordingStore((s) => s.startVideoRecording)
   const stopVideo = useVideoRecordingStore((s) => s.stopVideoRecording)
+  const editing = useInteractionStore((s) => s.editing)
 
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
@@ -171,6 +174,11 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
           <ToolbarButton icon={Video} label="Record Video" onClick={startVideo} />
         )}
         <ToolbarButton icon={isFullscreen ? Minimize2 : Maximize2} label="Fullscreen" onClick={toggleFullscreen} />
+        <Separator orientation="vertical" className="h-5" />
+        <ToolbarButton icon={Pencil} label="Edit Entities (E)" active={editing} onClick={() => {
+          const s = useInteractionStore.getState()
+          s.editing ? s.exitEditing() : s.enterEditing()
+        }} />
         <ToolbarButton icon={Settings} label="Settings" onClick={() => setSettingsOpen(true)} />
         <div className="ml-auto flex items-center gap-2">
           <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as EnvPreset)}>

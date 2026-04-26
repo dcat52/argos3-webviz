@@ -6,6 +6,9 @@ import { Separator } from '@/components/ui/separator'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronRight } from 'lucide-react'
 import { VizConfigPanel } from './VizConfigPanel'
+import { SpawnPalette } from './SpawnPalette'
+import { useConnectionStore } from '../stores/connectionStore'
+import { useMetadataStore } from '../stores/metadataStore'
 import type { AnyEntity, Vec3, Quaternion } from '../types/protocol'
 
 const fv = (v: Vec3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`
@@ -33,6 +36,10 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function Inspector({ entity }: { entity: AnyEntity }) {
+  const { debugPinnedIds, toggleDebugPin } = useExperimentStore(
+    useShallow((s) => ({ debugPinnedIds: s.debugPinnedIds, toggleDebugPin: s.toggleDebugPin }))
+  )
+  const isPinned = debugPinnedIds.has(entity.id)
   if (!('position' in entity)) return null
   return (
     <Section title="Inspector">
@@ -42,6 +49,12 @@ function Inspector({ entity }: { entity: AnyEntity }) {
         <Row label="Position" value={fv(entity.position)} />
         <Row label="Orientation" value={fq(entity.orientation)} />
         {'leds' in entity && entity.leds && <Row label="LEDs" value={String(entity.leds.length)} />}
+        <button
+          onClick={() => toggleDebugPin(entity.id)}
+          className={`w-full text-xs rounded px-2 py-1 mt-1 ${isPinned ? 'bg-yellow-500/20 text-yellow-600 dark:text-yellow-400' : 'bg-muted text-muted-foreground hover:bg-accent'}`}
+        >
+          {isPinned ? '🔍 Debug Pinned' : '🔍 Pin Debug View'}
+        </button>
         {entity.user_data !== undefined && (
           <div className="pt-1">
             <span className="text-xs text-muted-foreground">User Data</span>
@@ -76,6 +89,20 @@ export function Sidebar() {
       <ScrollArea className="flex-1">
         <div className="px-3 pt-2 space-y-1">
           {selected && <Inspector entity={selected} />}
+          {selected && (
+            <button
+              className="w-full text-xs bg-destructive text-destructive-foreground rounded px-2 py-1 mb-1"
+              onClick={() => {
+                useConnectionStore.getState().removeEntity(selected.id)
+                selectEntity(null)
+              }}
+            >
+              Delete {selected.id}
+            </button>
+          )}
+
+          <Separator />
+          <SpawnPalette />
 
           <Section title={`Entities (${entities.size})`}>
             {Array.from(grouped.entries()).map(([type, list]) => (

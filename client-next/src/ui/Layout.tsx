@@ -7,6 +7,8 @@ import { Scene } from '../scene/Scene'
 import { RecordingControls } from './RecordingControls'
 import { PanelLayer } from './PanelLayer'
 
+import { InteractionToolbar } from './InteractionToolbar'
+
 export function Layout() {
   const viewportRef = useRef<HTMLDivElement>(null)
 
@@ -23,6 +25,7 @@ export function Layout() {
             <Panel id="viewport" defaultSize="75%" minSize="20%">
               <div ref={viewportRef} className="relative w-full h-full">
                 <Scene />
+                <InteractionToolbar />
                 <PanelLayer />
               </div>
             </Panel>

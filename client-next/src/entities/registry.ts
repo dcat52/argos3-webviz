@@ -1,11 +1,15 @@
 import { ComponentType } from 'react'
 import { AnyEntity } from '../types/protocol'
+import type { RenderTier } from '../stores/settingsStore'
 
 export interface EntityRendererProps {
   entity: AnyEntity
   selected?: boolean
+  ghost?: boolean
+  tier?: RenderTier
   onClick?: () => void
   onDoubleClick?: () => void
+  onPointerDown?: (e: React.PointerEvent | any) => void
   overrideColor?: string
 }
 
