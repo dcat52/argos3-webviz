@@ -16,9 +16,10 @@ import { SettingsPanel } from './SettingsPanel'
 import { useCanvasRef } from '@/stores/canvasRefStore'
 import { useVideoRecordingStore } from '@/stores/videoRecordingStore'
 import { usePanelStore } from '@/stores/panelStore'
+import { ENTITY_DEBUG_PANEL_ID } from './panels/EntityDebugPanel'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useInteractionStore } from '@/stores/interactionStore'
-import { Pencil } from 'lucide-react'
+import { Pencil, Search } from 'lucide-react'
 
 const statusColors: Record<string, string> = {
   connected: 'bg-green-500',
@@ -60,7 +61,7 @@ function ToolbarButton({ icon: Icon, label, active, onClick, testId }: {
 function PanelsDropdown({ onClose }: { onClose: () => void }) {
   const panels = usePanelStore((s) => s.panels)
   const toggle = usePanelStore((s) => s.toggle)
-  const names: Record<string, string> = { 'experiment-data': 'Experiment Data', 'event-log': 'Event Log' }
+  const names: Record<string, string> = { 'experiment-data': 'Experiment Data', 'event-log': 'Event Log', 'entity-debug': 'Entity Debug' }
   return (
     <div className="absolute top-full left-0 mt-1 z-50 bg-card border rounded-md shadow-lg p-1 min-w-[160px]" onMouseLeave={onClose}>
       {Object.entries(panels).map(([id, p]) => (
@@ -97,6 +98,8 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
   const startVideo = useVideoRecordingStore((s) => s.startVideoRecording)
   const stopVideo = useVideoRecordingStore((s) => s.stopVideoRecording)
   const editing = useInteractionStore((s) => s.editing)
+  const debugPanelOpen = usePanelStore((s) => s.panels[ENTITY_DEBUG_PANEL_ID]?.open ?? false)
+  const toggleDebugPanel = usePanelStore((s) => s.toggle)
 
   const availableScenes = (userData as { available_scenes?: string[] })?.available_scenes
   const currentScene = (userData as { current_scene?: string })?.current_scene
@@ -179,6 +182,7 @@ export function Toolbar({ viewportRef }: { viewportRef?: RefObject<HTMLDivElemen
           const s = useInteractionStore.getState()
           s.editing ? s.exitEditing() : s.enterEditing()
         }} />
+        <ToolbarButton icon={Search} label="Entity Debug Panel" active={debugPanelOpen} onClick={() => toggleDebugPanel(ENTITY_DEBUG_PANEL_ID)} />
         <ToolbarButton icon={Settings} label="Settings" onClick={() => setSettingsOpen(true)} />
         <div className="ml-auto flex items-center gap-2">
           <Select value={envPreset} onValueChange={(v) => setEnvPreset(v as EnvPreset)}>
