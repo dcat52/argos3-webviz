@@ -58,6 +58,7 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-020 | Feature Registry | 2026-04-26 |
 | PN-018 | Timeline Scrubber | 2026-04-21 |
 | PN-017 | Multi-Experiment Dashboard | 2026-04-21 |
 | PN-014 | Speed Control | 2026-04-19 |
