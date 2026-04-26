@@ -28,7 +28,7 @@ import { DynamicFloor } from './DynamicFloor'
 import { ScaleBarUpdater, ScaleBarOverlay } from './ScaleBar'
 import { InstancedEntities } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
-import { linearScale, categoricalScale, computeMinMax } from '../lib/colorScales'
+import { linearScale, categoricalScale } from '../lib/colorScales'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
 
 function ArenaBounds({ arena }: { arena: ArenaInfo }) {
@@ -45,33 +45,51 @@ function ArenaBounds({ arena }: { arena: ArenaInfo }) {
 
 function useFieldDiscovery() {
   const entities = useExperimentStore((s) => s.entities)
+  const computedFields = useExperimentStore((s) => s.computedFields)
   const setFields = useVizConfigStore((s) => s.setFields)
   const applyHints = useVizConfigStore((s) => s.applyHints)
   const userData = useExperimentStore((s) => s.userData)
 
   useEffect(() => {
-    const fields = discoverFields(entities)
+    const fields = discoverFields(entities, computedFields)
     setFields(fields)
     if (userData && typeof userData === 'object' && '_viz_hints' in (userData as Record<string, unknown>)) {
       applyHints((userData as Record<string, unknown>)._viz_hints as Record<string, unknown>)
     }
-  }, [entities, setFields, applyHints, userData])
+  }, [entities, computedFields, setFields, applyHints, userData])
 }
+
+const AGENT_TYPES = new Set(['foot-bot', 'kheperaiv', 'Leo'])
 
 export function useColorByMap(): Map<string, string> {
   const entities = useExperimentStore((s) => s.entities)
+  const computedFields = useExperimentStore((s) => s.computedFields)
   const colorBy = useVizConfigStore((s) => s.config.colorBy)
 
   return useMemo(() => {
     const map = new Map<string, string>()
     if (!colorBy?.enabled || !colorBy.field) return map
 
-    const [min, max] = colorBy.scale === 'linear' ? computeMinMax(entities, colorBy.field) : [0, 1]
+    const isComputed = colorBy.field.startsWith('_')
+
+    // Compute min/max for linear scale (agents only)
+    let min = Infinity, max = -Infinity
+    if (colorBy.scale === 'linear') {
+      for (const entity of entities.values()) {
+        if (!AGENT_TYPES.has(entity.type)) continue
+        const val = isComputed
+          ? computedFields.get(entity.id)?.[colorBy.field]
+          : ('user_data' in entity && entity.user_data ? (entity.user_data as Record<string, unknown>)[colorBy.field] : undefined)
+        if (typeof val === 'number') { min = Math.min(min, val); max = Math.max(max, val) }
+      }
+      if (min === Infinity) { min = 0; max = 1 }
+    }
 
     for (const entity of entities.values()) {
-      if (!('user_data' in entity) || !entity.user_data) continue
-      const ud = entity.user_data as Record<string, unknown>
-      const val = ud[colorBy.field]
+      if (!AGENT_TYPES.has(entity.type)) continue
+      const val = isComputed
+        ? computedFields.get(entity.id)?.[colorBy.field]
+        : ('user_data' in entity && entity.user_data ? (entity.user_data as Record<string, unknown>)[colorBy.field] : undefined)
       if (val === undefined) continue
       if (colorBy.scale === 'linear' && typeof val === 'number') {
         map.set(entity.id, linearScale(val, min, max, colorBy.colorA, colorBy.colorB))
@@ -80,7 +98,7 @@ export function useColorByMap(): Map<string, string> {
       }
     }
     return map
-  }, [entities, colorBy])
+  }, [entities, computedFields, colorBy])
 }
 
 function GlCapture() {
