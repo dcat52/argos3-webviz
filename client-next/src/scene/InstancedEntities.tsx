@@ -8,7 +8,8 @@ import { EntityRenderer } from '../entities/EntityRenderer'
 import { SelectionRing } from './SelectionRing'
 import type { AnyEntity, BaseEntity } from '../types/protocol'
 
-const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
+export const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
+export const INDIVIDUAL_THRESHOLD = 30
 const BODY_PARAMS: Record<string, { radius: number; height: number; color: string }> = {
   'kheperaiv': { radius: 0.07, height: 0.054, color: '#2a3a4a' },
   'foot-bot': { radius: 0.0704, height: 0.093, color: '#2a2a3a' },
@@ -134,22 +135,19 @@ export function InstancedEntities({ colorMap }: Props) {
       arr.push(e as BaseEntity)
       groups.set(e.type, arr)
     }
+    // Only keep groups above the individual threshold
+    for (const [type, ents] of groups) {
+      if (ents.length <= INDIVIDUAL_THRESHOLD) groups.delete(type)
+    }
     return groups
   }, [entities])
 
   return (
     <>
-      {Array.from(grouped.entries()).map(([type, ents]) =>
-        ents.length <= 30 ? (
-          ents.map((e) => (
-            <group key={e.id}>
-              <EntityRenderer entity={e as AnyEntity} />
-            </group>
-          ))
-        ) : (
-          <InstancedGroup key={type} type={type} entities={ents} colorMap={colorMap} />
-        )
-      )}
+      {Array.from(grouped.entries()).map(([type, ents]) => (
+        <InstancedGroup key={type} type={type} entities={ents} colorMap={colorMap} />
+      )
+    )}
     </>
   )
 }

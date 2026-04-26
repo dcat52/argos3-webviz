@@ -26,7 +26,7 @@ import { FloatingLabels } from './FloatingLabels'
 import { DrawOverlays } from './DrawOverlays'
 import { DynamicFloor } from './DynamicFloor'
 import { ScaleBarUpdater, ScaleBarOverlay } from './ScaleBar'
-import { InstancedEntities } from './InstancedEntities'
+import { InstancedEntities, INSTANCED_TYPES, INDIVIDUAL_THRESHOLD } from './InstancedEntities'
 import { discoverFields } from '../lib/vizEngine'
 import { linearScale, categoricalScale } from '../lib/colorScales'
 import type { AnyEntity, ArenaInfo } from '../types/protocol'
@@ -108,7 +108,6 @@ function GlCapture() {
   return null
 }
 
-const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 
 function SceneEntities() {
   const { entities, selectedEntityId, selectEntity, startDrag } = useExperimentStore(
@@ -126,10 +125,18 @@ function SceneEntities() {
   }, [flyTo])
 
   // Split entities into instanced vs individual
-  const individual = useMemo(() =>
-    Array.from(entities.values()).filter((e) => !INSTANCED_TYPES.has(e.type)),
-    [entities]
-  )
+  // Split entities: robots with >INDIVIDUAL_THRESHOLD go to instanced, rest rendered individually
+  const individual = useMemo(() => {
+    // Count per instanced type
+    const counts = new Map<string, number>()
+    for (const e of entities.values()) {
+      if (INSTANCED_TYPES.has(e.type)) counts.set(e.type, (counts.get(e.type) ?? 0) + 1)
+    }
+    return Array.from(entities.values()).filter((e) => {
+      if (!INSTANCED_TYPES.has(e.type)) return true
+      return (counts.get(e.type) ?? 0) <= INDIVIDUAL_THRESHOLD
+    })
+  }, [entities])
 
   return (
     <>
