@@ -12,7 +12,7 @@ export const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 export const INDIVIDUAL_THRESHOLD = 30
 const BODY_PARAMS: Record<string, { radius: number; height: number; color: string }> = {
   'kheperaiv': { radius: 0.07, height: 0.054, color: '#2a3a4a' },
-  'foot-bot': { radius: 0.0704, height: 0.093, color: '#2a2a3a' },
+  'foot-bot': { radius: 0.0704, height: 0.093, color: '#e8e8ec' },
 }
 // Larger hit radius for easier clicking
 const HIT_SCALE = 2.5
