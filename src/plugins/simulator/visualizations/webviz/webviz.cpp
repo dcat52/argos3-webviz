@@ -13,6 +13,7 @@
 
 #include <unordered_map>
 #include <unordered_set>
+#include <sstream>
 
 /* Entity includes for programmatic construction */
 #include <argos3/plugins/simulator/entities/box_entity.h>
@@ -66,6 +67,26 @@ namespace argos {
       t_tree, "extended_state", m_bExtendedState, false);
     GetNodeAttributeOrDefault(
       t_tree, "real_time_factor", m_fRealTimeFactor, Real(1.0));
+
+    /* User data filtering options */
+    GetNodeAttributeOrDefault(
+      t_tree, "send_entity_data", m_bSendEntityData, true);
+    GetNodeAttributeOrDefault(
+      t_tree, "send_global_data", m_bSendGlobalData, true);
+    std::string strEntityDataFields;
+    GetNodeAttributeOrDefault(
+      t_tree, "entity_data_fields", strEntityDataFields, std::string(""));
+    if (!strEntityDataFields.empty()) {
+      std::istringstream ss(strEntityDataFields);
+      std::string field;
+      while (std::getline(ss, field, ',')) {
+        /* Trim whitespace */
+        size_t start = field.find_first_not_of(" ");
+        size_t end = field.find_last_not_of(" ");
+        if (start != std::string::npos)
+          m_setEntityDataFields.insert(field.substr(start, end - start + 1));
+      }
+    }
 
     /* Get options for ssl certificate from XML */
     GetNodeAttributeOrDefault(
@@ -794,8 +815,20 @@ namespace argos {
         /************* get data from User functions for entity *************/
         const nlohmann::json& user_data = m_pcUserFunctions->Call(**itEntities);
 
-        if (!user_data.is_null()) {
-          cEntityJSON["user_data"] = user_data;
+        if (!user_data.is_null() && m_bSendEntityData) {
+          if (m_setEntityDataFields.empty()) {
+            cEntityJSON["user_data"] = user_data;
+          } else {
+            nlohmann::json cFiltered;
+            for (const auto& field : m_setEntityDataFields) {
+              if (user_data.contains(field)) {
+                cFiltered[field] = user_data[field];
+              }
+            }
+            if (!cFiltered.is_null()) {
+              cEntityJSON["user_data"] = std::move(cFiltered);
+            }
+          }
         }
 
         cCurrentEntities.push_back(cEntityJSON);
@@ -880,7 +913,7 @@ namespace argos {
 
     const nlohmann::json& user_data = m_pcUserFunctions->sendUserData();
 
-    if (!user_data.is_null()) {
+    if (!user_data.is_null() && m_bSendGlobalData) {
       cStateJson["user_data"] = user_data;
     }
 

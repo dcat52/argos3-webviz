@@ -56,6 +56,7 @@ namespace argos {
 #include <atomic>
 #include <functional>
 #include <mutex>
+#include <set>
 #include <thread>
 #include <unordered_map>
 
@@ -211,6 +212,15 @@ namespace argos {
 
     /** Whether schema has been sent */
     bool m_bSchemaSent = false;
+
+    /** Whether to send per-entity user_data */
+    bool m_bSendEntityData = true;
+
+    /** Whether to send global user_data */
+    bool m_bSendGlobalData = true;
+
+    /** Whitelist of per-entity user_data fields (empty = send all) */
+    std::set<std::string> m_setEntityDataFields;
 
     /** Command queue for thread-safe entity mutations */
     std::mutex m_mtxCommandQueue;
