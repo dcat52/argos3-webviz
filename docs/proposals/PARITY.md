@@ -1,22 +1,19 @@
 # QT-OpenGL Parity Tracking
 
-Items needed to match QT-OpenGL functionality that don't yet have proposals.
+Items needed to match QT-OpenGL functionality.
 
-## Entity Dragging
+## ✅ Implemented
+- Entity dragging (Ctrl+click-drag, PN-019)
+- Entity selection + fly-to (double-click)
+- Entity spawning (click-to-place with drag-to-aim)
+- Entity deletion
+- Arena boundaries
+- Sensor ray visualization
+- LED rendering (foot-bot, kheperaiv, box, cylinder)
+- Speed control (pause, step, fast-forward)
+- Recording / replay
 
-QT-OpenGL supports clicking and dragging entities to reposition them. The
-legacy webviz client sends `moveEntity` commands. Client-next has the protocol
-type defined (`MoveEntityCommand` in `protocol.ts`) but no UI for it.
-
-**What's needed:**
-- Click-and-drag on entities in the 3D viewport
-- Raycasting to determine drag plane (ground plane or entity height)
-- Send `moveEntity` command with new position/orientation on drag end
-- Visual feedback during drag (ghost position or highlight)
-
-**QT-OpenGL hooks this maps to:**
-- `EntitySelected()`, `EntityDeselected()`, `EntityMoved()`, `EntityRotated()`
-
-**Effort estimate:** ~2-3 hours (raycasting + drag handler + command sending)
-
-**Status:** Not yet a proposal. Will become one when prioritized.
+## ⬜ Not Yet Implemented
+- Entity rotation via UI (QT-OpenGL has rotation handles)
+- Floor texture rendering from loop functions (partial — DynamicFloor exists)
+- OpenGL loop functions (QT-specific, not applicable to web)
