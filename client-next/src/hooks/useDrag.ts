@@ -3,7 +3,7 @@ import { useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useConnectionStore } from '@/stores/connectionStore'
-import { usePlacementStore } from '@/stores/placementStore'
+import { usePlacementStore, setDragStartScreen, isDragAboveThreshold } from '@/stores/placementStore'
 import { useInteractionStore } from '@/stores/interactionStore'
 
 const camCtrl = () => (globalThis as any).__cameraControlsRef?.current
@@ -100,25 +100,14 @@ export function useDrag() {
       if (e.button !== 0) return
       const mode = useInteractionStore.getState().mode
 
-      // Place mode: click to place
+      // Place mode: press to set position, drag to aim, release to spawn
       if (mode === 'place') {
         const placement = usePlacementStore.getState()
         if (!placement.active) return
         const hit = groundHit(e)
-        if (hit && placement.config) {
-          const config = placement.config
-          useConnectionStore.getState().addEntity({
-            type: config.type,
-            id_prefix: config.id_prefix ?? config.type,
-            position: { x: hit.x, y: hit.y, z: 0 },
-            orientation: { x: 0, y: 0, z: 0, w: 1 },
-            controller: config.controller,
-            size: config.size,
-            movable: config.movable,
-            mass: config.mass,
-            radius: config.radius,
-            height: config.height,
-          })
+        if (hit) {
+          setDragStartScreen(e.clientX, e.clientY)
+          usePlacementStore.getState().beginDrag({ x: hit.x, y: hit.y, z: 0 })
         }
         e.stopPropagation()
         e.preventDefault()
@@ -142,12 +131,21 @@ export function useDrag() {
     const onPointerMove = (e: PointerEvent) => {
       const mode = useInteractionStore.getState().mode
 
-      // Ghost cursor in place mode
+      // Ghost cursor + drag-to-aim in place mode
       if (mode === 'place') {
         const placement = usePlacementStore.getState()
         if (placement.active) {
-          const hit = groundHit(e)
-          if (hit) placement.updateCursor({ x: hit.x, y: hit.y, z: 0 })
+          if (placement.dragging) {
+            // During drag: update orientation based on drag vector
+            if (isDragAboveThreshold(e.clientX, e.clientY)) {
+              const hit = groundHit(e)
+              if (hit) usePlacementStore.getState().updateDrag({ x: hit.x, y: hit.y, z: 0 })
+            }
+          } else {
+            // Not dragging: update ghost cursor position
+            const hit = groundHit(e)
+            if (hit) placement.updateCursor({ x: hit.x, y: hit.y, z: 0 })
+          }
         }
       }
 
@@ -158,7 +156,33 @@ export function useDrag() {
       }
     }
 
-    const onPointerUp = () => {
+    const onPointerUp = (e: PointerEvent) => {
+      // Place mode: release to spawn with orientation
+      const mode = useInteractionStore.getState().mode
+      if (mode === 'place') {
+        const placement = usePlacementStore.getState()
+        if (placement.dragging && placement.config) {
+          const result = usePlacementStore.getState().endDrag()
+          if (result) {
+            const config = placement.config
+            useConnectionStore.getState().addEntity({
+              type: config.type,
+              id_prefix: config.id_prefix ?? config.type,
+              position: result.position,
+              orientation: result.orientation,
+              controller: config.controller,
+              size: config.size,
+              movable: config.movable,
+              mass: config.mass,
+              radius: config.radius,
+              height: config.height,
+            })
+          }
+        }
+        return
+      }
+
+      // Entity drag: release to commit move
       if (!dragging || !dragId) return
       const store = useExperimentStore.getState()
       const entity = store.entities.get(dragId)

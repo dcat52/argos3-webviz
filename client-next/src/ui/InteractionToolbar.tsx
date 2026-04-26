@@ -2,17 +2,19 @@ import { useEffect } from 'react'
 import { useInteractionStore, type InteractionMode } from '@/stores/interactionStore'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { usePlacementStore } from '@/stores/placementStore'
+import { useFeature } from '@/stores/featureStore'
 import { DistributeParams } from './DistributeParams'
+import { PlaceParams } from './PlaceParams'
 
-const MODES: { mode: InteractionMode; icon: string; label: string; shortcut: string }[] = [
+const MODES: { mode: InteractionMode; icon: string; label: string; shortcut: string; feature?: string }[] = [
   { mode: 'select', icon: '🖱️', label: 'Select', shortcut: 'V' },
   { mode: 'place', icon: '📍', label: 'Place', shortcut: 'P' },
-  { mode: 'distribute', icon: '🎲', label: 'Distribute', shortcut: 'D' },
+  { mode: 'distribute', icon: '🎲', label: 'Distribute', shortcut: 'D', feature: 'distribute' },
 ]
 
 export function InteractionToolbar() {
   const { mode, setMode, editing, enterEditing, exitEditing } = useInteractionStore()
-  const placementActive = usePlacementStore((s) => s.active)
+  const distributeEnabled = useFeature('distribute')
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -27,11 +29,15 @@ export function InteractionToolbar() {
       if (!editing) return
       if (e.key === 'v' || e.key === 'V') setMode('select')
       else if (e.key === 'p' || e.key === 'P') setMode('place')
-      else if (e.key === 'd' || e.key === 'D') setMode('distribute')
+      else if ((e.key === 'd' || e.key === 'D') && distributeEnabled) setMode('distribute')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [editing, setMode, enterEditing, exitEditing])
+  }, [editing, setMode, enterEditing, exitEditing, distributeEnabled])
+
+  if (!editing) return null
+
+  const visibleModes = MODES.filter((m) => !m.feature || (m.feature === 'distribute' && distributeEnabled))
 
   if (!editing) return null
 
@@ -39,7 +45,7 @@ export function InteractionToolbar() {
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-1">
       {/* Mode bar */}
       <div className="flex items-center gap-0.5 bg-card/90 backdrop-blur border rounded-lg shadow-lg px-1 py-1">
-        {MODES.map((m) => (
+        {visibleModes.map((m) => (
           <button
             key={m.mode}
             title={`${m.label} (${m.shortcut})`}
@@ -53,9 +59,6 @@ export function InteractionToolbar() {
           </button>
         ))}
 
-        {mode === 'place' && placementActive && (
-          <div className="ml-1 px-2 py-1 text-[10px] text-muted-foreground border-l">Click to place · ESC to exit</div>
-        )}
         {mode === 'select' && (
           <div className="ml-1 px-2 py-1 text-[10px] text-muted-foreground border-l">Ctrl+drag to move</div>
         )}
@@ -66,6 +69,9 @@ export function InteractionToolbar() {
           onClick={() => { usePlacementStore.getState().cancelPlacement(); exitEditing() }}
         >✕</button>
       </div>
+
+      {/* Sub-toolbar for place params */}
+      {mode === 'place' && <PlaceParams />}
 
       {/* Sub-toolbar for distribute params */}
       {mode === 'distribute' && <DistributeParams />}

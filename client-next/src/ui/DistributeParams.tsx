@@ -2,21 +2,15 @@ import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useMetadataStore } from '@/stores/metadataStore'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useConnectionStore } from '@/stores/connectionStore'
-import { usePlacementStore } from '@/stores/placementStore'
+import { usePlacementStore, yawQuaternion } from '@/stores/placementStore'
 import { generatePositions } from '@/lib/distribute'
+import { EntityPicker, ENTITY_DEFAULTS, isRobotType } from './EntityPicker'
 import type { Vec3 } from '@/types/protocol'
 
 type DistMethod = 'uniform' | 'gaussian' | 'grid'
 
-const ENTITY_DEFAULTS: Record<string, Record<string, unknown>> = {
-  'box': { size: { x: 0.3, y: 0.3, z: 0.3 }, movable: true, mass: 1.0 },
-  'cylinder': { radius: 0.15, height: 0.5, movable: true, mass: 1.0 },
-  'foot-bot': {},
-  'kheperaiv': {},
-}
-
 export function DistributeParams() {
-  const { entityTypes, controllers } = useMetadataStore()
+  const controllers = useMetadataStore((s) => s.controllers)
   const [selectedType, setSelectedType] = useState('')
   const [controller, setController] = useState('')
   const [prefix, setPrefix] = useState('')
@@ -27,9 +21,9 @@ export function DistributeParams() {
   const [rangeX, setRangeX] = useState(2)
   const [rangeY, setRangeY] = useState(2)
   const [spacing, setSpacing] = useState(0.5)
+  const [randomOrientation, setRandomOrientation] = useState(true)
 
-  const isRobot = selectedType === 'foot-bot' || selectedType === 'kheperaiv'
-  const needsController = isRobot && controllers.length > 0
+  const needsController = isRobotType(selectedType) && controllers.length > 0
   const canSpawn = selectedType && (!needsController || controller)
 
   const positions = useMemo(() => {
@@ -50,43 +44,44 @@ export function DistributeParams() {
     } catch { return [] }
   }, [selectedType, method, quantity, centerX, centerY, rangeX, rangeY, spacing])
 
+  // Generate stable random orientations for preview (seeded by quantity)
+  const orientations = useMemo(() => {
+    if (!randomOrientation) return []
+    // Use a simple seeded sequence so preview is stable across renders
+    let seed = 7919
+    return positions.map(() => {
+      seed = (seed * 16807 + 0) % 2147483647
+      return yawQuaternion((seed / 2147483647) * Math.PI * 2)
+    })
+  }, [positions, randomOrientation])
+
   // Sync ghost preview
   useEffect(() => {
     if (selectedType && positions.length) {
-      usePlacementStore.getState().setPreviewPositions(positions, selectedType)
+      usePlacementStore.getState().setPreviewPositions(positions, selectedType, orientations)
     } else {
       usePlacementStore.getState().setPreviewPositions([])
     }
     return () => { usePlacementStore.getState().setPreviewPositions([]) }
-  }, [positions, selectedType])
+  }, [positions, selectedType, orientations])
 
   const handleCommit = useCallback(() => {
     if (!canSpawn) return
     const base = {
       type: selectedType, id_prefix: prefix || selectedType,
-      orientation: { x: 0, y: 0, z: 0, w: 1 },
       controller: needsController ? controller : undefined,
       ...ENTITY_DEFAULTS[selectedType],
     }
-    for (const pos of positions) {
-      useConnectionStore.getState().addEntity({ ...base, position: pos })
+    for (let i = 0; i < positions.length; i++) {
+      const orientation = orientations[i] ?? { x: 0, y: 0, z: 0, w: 1 }
+      useConnectionStore.getState().addEntity({ ...base, position: positions[i], orientation })
     }
-  }, [canSpawn, selectedType, prefix, controller, needsController, positions])
+  }, [canSpawn, selectedType, prefix, controller, needsController, positions, orientations])
 
   return (
     <div className="bg-card/90 backdrop-blur border rounded-lg shadow-lg px-3 py-2 flex items-center gap-3 text-xs flex-wrap max-w-[700px]">
-      {/* Entity type */}
-      <select className="bg-background border rounded px-1.5 py-1 text-xs" value={selectedType} onChange={(e) => setSelectedType(e.target.value)}>
-        <option value="">Type...</option>
-        {entityTypes.map((t) => <option key={t} value={t}>{t}</option>)}
-      </select>
-
-      {needsController && (
-        <select className="bg-background border rounded px-1.5 py-1 text-xs" value={controller} onChange={(e) => setController(e.target.value)}>
-          <option value="">Controller...</option>
-          {controllers.map((c) => <option key={c} value={c}>{c}</option>)}
-        </select>
-      )}
+      {/* Entity type + controller */}
+      <EntityPicker selectedType={selectedType} controller={controller} onTypeChange={setSelectedType} onControllerChange={setController} />
 
       {/* Method */}
       <div className="flex gap-0.5">
@@ -122,6 +117,12 @@ export function DistributeParams() {
           <input type="number" step={0.1} min={0.1} value={spacing} onChange={(e) => setSpacing(+e.target.value)} className="w-12 bg-background border rounded px-1 text-xs" />
         </div>
       )}
+
+      {/* Random orientation */}
+      <label className="flex items-center gap-1 text-muted-foreground cursor-pointer">
+        <input type="checkbox" checked={randomOrientation} onChange={(e) => setRandomOrientation(e.target.checked)} className="rounded" />
+        Random heading
+      </label>
 
       {/* Commit */}
       <button
