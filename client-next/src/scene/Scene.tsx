@@ -21,6 +21,7 @@ import { FPSCounter } from './FPSCounter'
 import { EntityLinks } from './EntityLinks'
 import { TrailRenderer } from './TrailRenderer'
 import { HeatmapOverlay } from './HeatmapOverlay'
+import { useFeature } from '@/stores/featureStore'
 import { FloatingLabels } from './FloatingLabels'
 import { DrawOverlays } from './DrawOverlays'
 import { DynamicFloor } from './DynamicFloor'
@@ -145,6 +146,8 @@ function SceneContent() {
   const arena = useExperimentStore((s) => s.arena)
   const drawCommands = useExperimentStore((s) => s.drawCommands)
   const floorData = useExperimentStore((s) => s.floorData)
+  const trailsEnabled = useFeature('trails')
+  const heatmapEnabled = useFeature('heatmap')
   useFieldDiscovery()
 
   return (
@@ -153,8 +156,8 @@ function SceneContent() {
       <CameraController />
       <SceneEntities />
       <EntityLinks />
-      <TrailRenderer />
-      <HeatmapOverlay />
+      {trailsEnabled && <TrailRenderer />}
+      {heatmapEnabled && <HeatmapOverlay />}
       <FloatingLabels />
       <DrawOverlays commands={drawCommands} />
       {floorData && arena && <DynamicFloor floorData={floorData} arena={arena} />}

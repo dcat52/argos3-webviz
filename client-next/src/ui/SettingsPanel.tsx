@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useConnectionStore } from '@/stores/connectionStore'
+import { useFeatureStore } from '@/stores/featureStore'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -44,6 +45,29 @@ function ColorRow({ label, value, onChange }: { label: string; value: string; on
 /** Convert vertical FOV (degrees) to focal length (mm), matching ARGoS QT 27mm sensor */
 function fovToMm(fov: number): number {
   return Math.round(13.5 / Math.tan((fov * Math.PI / 180) / 2))
+}
+
+function FeaturesSection() {
+  const { features, enabled, experimentalEnabled, toggleFeature, setExperimentalEnabled } = useFeatureStore()
+  const experimental = Array.from(features.values()).filter((f) => f.experimental).sort((a, b) => a.label.localeCompare(b.label))
+  if (experimental.length === 0) return null
+  return (
+    <Section title="Features">
+      <div className="flex items-center justify-between gap-2 pb-1 border-b mb-1">
+        <div className="flex items-center gap-1.5">
+          <Label className="text-xs font-medium">Experimental Features</Label>
+          <span className="text-[9px] bg-yellow-500/20 text-yellow-600 dark:text-yellow-400 rounded px-1 py-0.5 font-medium">experimental</span>
+        </div>
+        <Switch checked={experimentalEnabled} onCheckedChange={setExperimentalEnabled} />
+      </div>
+      {experimentalEnabled && experimental.map((f) => (
+        <div key={f.id} className="flex items-center justify-between gap-2 pl-2">
+          <Label className="text-xs text-muted-foreground">{f.label}</Label>
+          <Switch checked={enabled.get(f.id) ?? false} onCheckedChange={() => toggleFeature(f.id)} />
+        </div>
+      ))}
+    </Section>
+  )
 }
 
 export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
@@ -198,6 +222,8 @@ export function SettingsPanel({ open, onOpenChange }: { open: boolean; onOpenCha
                 </Select>
               </Row>
             </Section>
+
+            <FeaturesSection />
 
           </div>
         </ScrollArea>
