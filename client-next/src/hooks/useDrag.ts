@@ -23,6 +23,7 @@ export function useDrag() {
     let dragging = false
     let rotating = false
     let dragId: string | null = null
+    let wasPlayingBeforeDrag = false
 
     const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
       const rect = canvas.getBoundingClientRect()
@@ -143,6 +144,10 @@ export function useDrag() {
             dragging = true
           }
           useExperimentStore.getState().startDrag(dragId)
+          // Auto-pause during manipulation
+          const expState = useExperimentStore.getState().state
+          wasPlayingBeforeDrag = expState === 'EXPERIMENT_PLAYING' || expState === 'EXPERIMENT_FAST_FORWARDING'
+          if (wasPlayingBeforeDrag) useConnectionStore.getState().pause()
           enableCamera(false)
           updateCursor()
           pendingEntityId = null
@@ -203,6 +208,8 @@ export function useDrag() {
           useConnectionStore.getState().moveEntity(dragId, entity.position, entity.orientation)
         }
         store.endDrag()
+        // Auto-resume if was playing before drag
+        if (wasPlayingBeforeDrag) useConnectionStore.getState().playAtSpeed(1)
         dragging = false
         rotating = false
         dragId = null
