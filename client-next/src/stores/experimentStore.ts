@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type Vec3 } from '../types/protocol'
+import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type Vec3, type Quaternion } from '../types/protocol'
 import { computeFields } from '../lib/computedFields'
 
 function extractDraw(userData: unknown): DrawCommand[] {
@@ -40,6 +40,7 @@ interface ExperimentState_ {
   startDrag: (id: string) => void
   endDrag: () => void
   updateDragPosition: (pos: Vec3) => void
+  updateDragOrientation: (orient: Quaternion) => void
   toggleDebugPin: (id: string) => void
 }
 
@@ -174,6 +175,16 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
     if (!entity || !('position' in entity)) return
     const next = new Map(entities)
     next.set(dragEntityId, { ...entity, position: pos } as AnyEntity)
+    set({ entities: next })
+  },
+
+  updateDragOrientation: (orient) => {
+    const { dragEntityId, entities } = get()
+    if (!dragEntityId) return
+    const entity = entities.get(dragEntityId)
+    if (!entity || !('orientation' in entity)) return
+    const next = new Map(entities)
+    next.set(dragEntityId, { ...entity, orientation: orient } as AnyEntity)
     set({ entities: next })
   },
 }))

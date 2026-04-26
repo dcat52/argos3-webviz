@@ -21,6 +21,7 @@ export function useDrag() {
   useEffect(() => {
     const canvas = gl.domElement
     let dragging = false
+    let rotating = false
     let dragId: string | null = null
 
     const groundHit = (e: PointerEvent | MouseEvent): THREE.Vector3 | null => {
@@ -62,6 +63,8 @@ export function useDrag() {
       const placement = usePlacementStore.getState()
       if (mode === 'place' && placement.active) {
         canvas.style.cursor = 'copy'
+      } else if (rotating) {
+        canvas.style.cursor = 'alias'
       } else if (dragging) {
         canvas.style.cursor = 'grabbing'
       } else {
@@ -72,7 +75,7 @@ export function useDrag() {
     const updateCamera = () => {
       const mode = useInteractionStore.getState().mode
       const placement = usePlacementStore.getState()
-      if (dragging || (mode === 'place' && placement.active)) {
+      if (dragging || rotating || (mode === 'place' && placement.active)) {
         enableCamera(false)
       } else {
         enableCamera(true)
@@ -82,6 +85,7 @@ export function useDrag() {
     const DRAG_THRESHOLD = 5 // pixels before click becomes drag
     let pendingEntityId: string | null = null
     let downX = 0, downY = 0
+    let altHeldOnDown = false
 
     const onPointerDown = (e: PointerEvent) => {
       if (e.button !== 0) return
@@ -104,6 +108,7 @@ export function useDrag() {
       // Select mode: record pointer down position and entity under cursor
       downX = e.clientX
       downY = e.clientY
+      altHeldOnDown = e.altKey
       pendingEntityId = findEntityId(e)
       // Don't start drag yet — wait for movement threshold
     }
@@ -127,14 +132,19 @@ export function useDrag() {
         }
       }
 
-      // Pending entity drag: start once threshold exceeded
-      if (!dragging && pendingEntityId) {
+      // Pending entity drag/rotate: start once threshold exceeded
+      if (!dragging && !rotating && pendingEntityId) {
         const dx = e.clientX - downX, dy = e.clientY - downY
         if (dx * dx + dy * dy > DRAG_THRESHOLD * DRAG_THRESHOLD) {
           dragId = pendingEntityId
-          dragging = true
+          if (altHeldOnDown) {
+            rotating = true
+          } else {
+            dragging = true
+          }
           useExperimentStore.getState().startDrag(dragId)
           enableCamera(false)
+          updateCursor()
           pendingEntityId = null
         }
       }
@@ -143,6 +153,19 @@ export function useDrag() {
       if (dragging && dragId) {
         const hit = groundHit(e)
         if (hit) useExperimentStore.getState().updateDragPosition({ x: hit.x, y: hit.y, z: 0 })
+      }
+
+      // Active rotate: compute angle from entity center to cursor
+      if (rotating && dragId) {
+        const hit = groundHit(e)
+        const entity = useExperimentStore.getState().entities.get(dragId)
+        if (hit && entity && 'position' in entity) {
+          const angle = Math.atan2(hit.y - entity.position.y, hit.x - entity.position.x)
+          const halfAngle = angle / 2
+          useExperimentStore.getState().updateDragOrientation({
+            x: 0, y: 0, z: Math.sin(halfAngle), w: Math.cos(halfAngle)
+          })
+        }
       }
     }
 
@@ -172,8 +195,8 @@ export function useDrag() {
         return
       }
 
-      // Entity drag release: commit move to server
-      if (dragging && dragId) {
+      // Entity drag/rotate release: commit to server
+      if ((dragging || rotating) && dragId) {
         const store = useExperimentStore.getState()
         const entity = store.entities.get(dragId)
         if (entity && 'position' in entity && 'orientation' in entity) {
@@ -181,6 +204,7 @@ export function useDrag() {
         }
         store.endDrag()
         dragging = false
+        rotating = false
         dragId = null
         pendingEntityId = null
         enableCamera(true)
