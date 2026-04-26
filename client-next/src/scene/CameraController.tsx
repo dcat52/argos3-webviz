@@ -1,11 +1,28 @@
 import { useEffect, useRef } from 'react'
-import { useFrame } from '@react-three/fiber'
+import { useFrame, useThree } from '@react-three/fiber'
 import { CameraControls } from '@react-three/drei'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { useCameraStore, type CameraPreset } from '@/stores/cameraStore'
 import { CAMERA } from '@/lib/defaults'
 import CameraControlsImpl from 'camera-controls'
+
+/** Small margin so the arena doesn't touch the viewport edges exactly. */
+const FIT_PADDING = 1.05
+
+/**
+ * Compute the camera distance needed to fit the arena plane in the viewport.
+ * Uses vertical FOV and aspect ratio to find the tightest fit.
+ */
+function fitDistance(arenaW: number, arenaH: number, vFovRad: number, aspect: number): number {
+  const halfVFov = vFovRad / 2
+  const halfHFov = Math.atan(aspect * Math.tan(halfVFov))
+  /* Distance needed so arena height fits vertically */
+  const dV = (arenaH / 2) / Math.tan(halfVFov)
+  /* Distance needed so arena width fits horizontally */
+  const dH = (arenaW / 2) / Math.tan(halfHFov)
+  return Math.max(dV, dH) * FIT_PADDING
+}
 
 function getPresetPos(preset: CameraPreset, cx: number, cy: number, dist: number): { pos: [number, number, number]; target: [number, number, number] } {
   const target: [number, number, number] = [cx, cy, 0]
@@ -29,6 +46,7 @@ export function CameraController() {
   const arena = useExperimentStore((s) => s.arena)
   const prevPreset = useRef(preset)
   const initialized = useRef(false)
+  const gl = useThree((s) => s.gl)
 
   useEffect(() => {
     setCameraControlsRef(ref);
@@ -38,16 +56,19 @@ export function CameraController() {
   const minDist = useSettingsStore((s) => s.cameraMinDistance)
   const maxDistMult = useSettingsStore((s) => s.cameraMaxDistanceMultiplier)
   const smoothTime = useSettingsStore((s) => s.cameraSmoothTime)
+  const fov = useSettingsStore((s) => s.fov)
 
   useEffect(() => {
     if (!ref.current || !arena) return
     if (initialized.current && preset === prevPreset.current) return
     initialized.current = true
-    const dist = Math.max(arena.size.x, arena.size.y) * CAMERA.arenaDistanceMultiplier
+    const vFovRad = (fov * Math.PI) / 180
+    const aspect = gl.domElement.clientWidth / gl.domElement.clientHeight
+    const dist = fitDistance(arena.size.x, arena.size.y, vFovRad, aspect)
     const { pos, target } = getPresetPos(preset, arena.center.x, arena.center.y, dist)
     ref.current.setLookAt(pos[0], pos[1], pos[2], target[0], target[1], target[2], true)
     prevPreset.current = preset
-  }, [preset, arena])
+  }, [preset, arena, fov, gl])
 
   useEffect(() => {
     if (!ref.current || !flyToTarget) return

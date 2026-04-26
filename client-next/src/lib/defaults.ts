@@ -42,7 +42,6 @@ export const CAMERA = {
   maxDistanceMultiplier: 3,
   smoothTime: 0.25,
   maxPolarAngle: Math.PI / 2.05,
-  arenaDistanceMultiplier: 1.5,
   followOffset: [1, -1, 1.5] as [number, number, number],
 }
 
