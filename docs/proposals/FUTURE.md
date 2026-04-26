@@ -12,9 +12,6 @@ The distribute spawn mode works but needs UX polish — click-to-set-center, vis
 ### Entity Rotation
 Post-spawn rotation handle or angle slider in the inspector. Drag-to-aim works for spawn, but no way to rotate an already-placed entity without re-spawning.
 
-### Entity Inspection Panel
-Deeper per-agent insight — click an entity to see its full state, sensors, controller, user_data, computed fields. Richer than the current minimal sidebar inspector.
-
 ### Workspace Presets
 Broader preset concept: bundle camera position, viz settings, panel layout, feature flags into named configurations. Current viz-only presets are a narrow first version.
 
@@ -28,5 +25,5 @@ These are behind feature flags and need polish before becoming stable:
 
 ## External / Out of Scope
 - **Spiri entity** — external plugin, not in this repo
-- **glTF foot-bot model** — upgrade from procedural to loaded model (future)
+- **glTF foot-bot model** — upgrade from procedural to loaded model (nice-to-have, current procedural model is functional)
 - **ARGoS core: post-physics sensor re-read** — a hook in the ARGoS simulator to let visualizations request sensor data recomputed after physics steps. Would give "true" post-physics rays but requires changes to the ARGoS core repo. The local webviz fix (PN-022) handles the visual mismatch without this. Discovered during PN-022 investigation.

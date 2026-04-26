@@ -56,6 +56,8 @@ None.
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-024 | Entity Inspection Panel | 2026-04-26 |
+| PN-023 | Fit Arena to Viewport | 2026-04-26 |
 | PN-022 | Proximity Ray Frame Fix | 2026-04-26 |
 | PN-021 | Render Tiers | 2026-04-26 |
 | PN-020 | Feature Registry | 2026-04-26 |
