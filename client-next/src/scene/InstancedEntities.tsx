@@ -11,8 +11,10 @@ import type { AnyEntity, BaseEntity } from '../types/protocol'
 const INSTANCED_TYPES = new Set(['kheperaiv', 'foot-bot'])
 const BODY_PARAMS: Record<string, { radius: number; height: number; color: string }> = {
   'kheperaiv': { radius: 0.07, height: 0.054, color: '#2a3a4a' },
-  'foot-bot': { radius: 0.085, height: 0.146, color: '#2a2a3a' },
+  'foot-bot': { radius: 0.0704, height: 0.093, color: '#2a2a3a' },
 }
+// Larger hit radius for easier clicking
+const HIT_SCALE = 2.5
 
 const _obj = new THREE.Object3D()
 const _color = new THREE.Color()
@@ -26,6 +28,7 @@ interface Props {
 
 function InstancedGroup({ type, entities, colorMap }: { type: string; entities: BaseEntity[]; colorMap: Map<string, string> }) {
   const meshRef = useRef<THREE.InstancedMesh>(null)
+  const hitRef = useRef<THREE.InstancedMesh>(null)
   const { selectedEntityId, selectEntity } = useExperimentStore(
     useShallow((s) => ({ selectedEntityId: s.selectedEntityId, selectEntity: s.selectEntity }))
   )
@@ -34,6 +37,8 @@ function InstancedGroup({ type, entities, colorMap }: { type: string; entities: 
 
   const geo = useMemo(() => new THREE.CylinderGeometry(params.radius, params.radius, params.height, 16), [params])
   const mat = useMemo(() => new THREE.MeshPhysicalMaterial({ metalness: 0.1, roughness: 0.6 }), [])
+  const hitGeo = useMemo(() => new THREE.CylinderGeometry(params.radius * HIT_SCALE, params.radius * HIT_SCALE, params.height * 1.5, 8), [params])
+  const hitMat = useMemo(() => new THREE.MeshBasicMaterial({ visible: false }), [])
 
   // Filter out selected entity for individual rendering
   const selectedEntity = useMemo(() =>
@@ -47,6 +52,7 @@ function InstancedGroup({ type, entities, colorMap }: { type: string; entities: 
 
   useFrame(() => {
     const mesh = meshRef.current
+    const hit = hitRef.current
     if (!mesh) return
     for (let i = 0; i < instanced.length; i++) {
       const e = instanced[i]
@@ -55,21 +61,23 @@ function InstancedGroup({ type, entities, colorMap }: { type: string; entities: 
       _obj.quaternion.copy(_q).multiply(_bodyRot)
       _obj.updateMatrix()
       mesh.setMatrixAt(i, _obj.matrix)
+      if (hit) hit.setMatrixAt(i, _obj.matrix)
       const c = colorMap.get(e.id) ?? params.color
       mesh.setColorAt(i, _color.set(c))
     }
     mesh.instanceMatrix.needsUpdate = true
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true
+    if (hit) hit.instanceMatrix.needsUpdate = true
   })
 
   // Map instanceId -> entity for click handling
   const idxMap = useRef<BaseEntity[]>([])
   useEffect(() => { idxMap.current = instanced }, [instanced])
 
-  // Expose entity IDs on mesh userData for drag raycasting
+  // Expose entity IDs on hit mesh userData for drag raycasting
   useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.userData.entityIds = instanced.map((e) => e.id)
+    if (hitRef.current) {
+      hitRef.current.userData.entityIds = instanced.map((e) => e.id)
     }
   }, [instanced])
 
@@ -80,6 +88,11 @@ function InstancedGroup({ type, entities, colorMap }: { type: string; entities: 
         args={[geo, mat, instanced.length]}
         castShadow
         receiveShadow
+        raycast={() => {}} // visual mesh is not clickable
+      />
+      <instancedMesh
+        ref={hitRef}
+        args={[hitGeo, hitMat, instanced.length]}
         onClick={(e) => {
           if (e.instanceId !== undefined && idxMap.current[e.instanceId]) {
             selectEntity(idxMap.current[e.instanceId].id)
@@ -127,10 +140,12 @@ export function InstancedEntities({ colorMap }: Props) {
   return (
     <>
       {Array.from(grouped.entries()).map(([type, ents]) =>
-        ents.length === 1 ? (
-          <group key={type}>
-            <EntityRenderer entity={ents[0] as AnyEntity} />
-          </group>
+        ents.length <= 30 ? (
+          ents.map((e) => (
+            <group key={e.id}>
+              <EntityRenderer entity={e as AnyEntity} />
+            </group>
+          ))
         ) : (
           <InstancedGroup key={type} type={type} entities={ents} colorMap={colorMap} />
         )
