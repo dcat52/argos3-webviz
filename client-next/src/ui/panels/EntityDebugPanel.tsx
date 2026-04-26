@@ -4,6 +4,7 @@ import { FloatingPanel } from '../FloatingPanel'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { ChevronRight } from 'lucide-react'
 import type { AnyEntity, Vec3, Quaternion } from '@/types/protocol'
+import { UserDataView } from '../UserDataView'
 
 export const ENTITY_DEBUG_PANEL_ID = 'entity-debug'
 
@@ -104,9 +105,9 @@ function EntityContent({ entity, computed }: { entity: AnyEntity; computed: Reco
 
       {entity.user_data !== undefined && (
         <Sect title="User Data" defaultOpen={false}>
-          <pre className="text-[9px] text-muted-foreground bg-muted p-1.5 rounded overflow-auto max-h-40">
-            {JSON.stringify(entity.user_data, null, 2)}
-          </pre>
+          <div className="pl-2">
+            <UserDataView data={entity.user_data} />
+          </div>
         </Sect>
       )}
 

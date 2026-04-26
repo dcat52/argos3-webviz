@@ -9,6 +9,7 @@ import { VizConfigPanel } from './VizConfigPanel'
 import { SpawnPalette } from './SpawnPalette'
 import { useConnectionStore } from '../stores/connectionStore'
 import { useMetadataStore } from '../stores/metadataStore'
+import { UserDataView } from './UserDataView'
 import type { AnyEntity, Vec3, Quaternion } from '../types/protocol'
 
 const fv = (v: Vec3) => `${v.x.toFixed(2)}, ${v.y.toFixed(2)}, ${v.z.toFixed(2)}`
@@ -61,9 +62,9 @@ function Inspector({ entity }: { entity: AnyEntity }) {
         {entity.user_data !== undefined && (
           <div className="pt-1">
             <span className="text-xs text-muted-foreground">User Data</span>
-            <pre className="text-[10px] text-muted-foreground mt-1 bg-muted p-1.5 rounded overflow-auto max-h-24">
-              {JSON.stringify(entity.user_data, null, 2)}
-            </pre>
+            <div className="mt-1">
+              <UserDataView data={entity.user_data} />
+            </div>
           </div>
         )}
       </div>
