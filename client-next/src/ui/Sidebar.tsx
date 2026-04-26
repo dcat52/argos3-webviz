@@ -36,10 +36,11 @@ function Row({ label, value }: { label: string; value: string }) {
 }
 
 function Inspector({ entity }: { entity: AnyEntity }) {
-  const { debugPinnedIds, toggleDebugPin } = useExperimentStore(
-    useShallow((s) => ({ debugPinnedIds: s.debugPinnedIds, toggleDebugPin: s.toggleDebugPin }))
+  const { debugPinnedIds, toggleDebugPin, computedFields } = useExperimentStore(
+    useShallow((s) => ({ debugPinnedIds: s.debugPinnedIds, toggleDebugPin: s.toggleDebugPin, computedFields: s.computedFields }))
   )
   const isPinned = debugPinnedIds.has(entity.id)
+  const computed = computedFields.get(entity.id)
   if (!('position' in entity)) return null
   return (
     <Section title="Inspector">
@@ -48,6 +49,8 @@ function Inspector({ entity }: { entity: AnyEntity }) {
         <Row label="Type" value={entity.type} />
         <Row label="Position" value={fv(entity.position)} />
         <Row label="Orientation" value={fq(entity.orientation)} />
+        {computed && '_speed' in computed && <Row label="Speed" value={Number(computed._speed).toFixed(3)} />}
+        {computed && '_heading' in computed && <Row label="Heading" value={`${(Number(computed._heading) * 180 / Math.PI).toFixed(1)}°`} />}
         {'leds' in entity && entity.leds && <Row label="LEDs" value={String(entity.leds.length)} />}
         <button
           onClick={() => toggleDebugPin(entity.id)}

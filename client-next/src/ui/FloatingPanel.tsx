@@ -14,12 +14,14 @@ interface Props {
   id: string
   title: string
   defaultPosition?: { pin: Corner } | { x: number; y: number }
+  initialOpen?: boolean
   closable?: boolean
   children: ReactNode
 }
 
-export function FloatingPanel({ id, title, defaultPosition, closable = true, children }: Props) {
+export function FloatingPanel({ id, title, defaultPosition, initialOpen = true, closable = true, children }: Props) {
   const ref = useRef<HTMLDivElement>(null)
+  const titleRef = useRef<HTMLDivElement>(null)
   const dragStart = useRef<{ mx: number; my: number; px: number; py: number } | null>(null)
 
   const panel = usePanelStore((s) => s.panels[id])
@@ -30,7 +32,7 @@ export function FloatingPanel({ id, title, defaultPosition, closable = true, chi
   const bringToFront = usePanelStore((s) => s.bringToFront)
 
   useEffect(() => {
-    register(id, { position: defaultPosition ?? { pin: 'top-right' } })
+    register(id, { position: defaultPosition ?? { pin: 'top-right' }, open: initialOpen })
   }, [id, register, defaultPosition])
 
   const onPointerDown = useCallback((e: React.PointerEvent) => {
@@ -39,7 +41,7 @@ export function FloatingPanel({ id, title, defaultPosition, closable = true, chi
     if (!el) return
     const rect = el.getBoundingClientRect()
     dragStart.current = { mx: e.clientX, my: e.clientY, px: rect.left, py: rect.top }
-    el.setPointerCapture(e.pointerId)
+    titleRef.current?.setPointerCapture(e.pointerId)
   }, [id, bringToFront])
 
   const onPointerMove = useCallback((e: React.PointerEvent) => {
@@ -65,7 +67,7 @@ export function FloatingPanel({ id, title, defaultPosition, closable = true, chi
 
   const onPointerUp = useCallback((e: React.PointerEvent) => {
     dragStart.current = null
-    ref.current?.releasePointerCapture(e.pointerId)
+    titleRef.current?.releasePointerCapture(e.pointerId)
   }, [])
 
   if (!panel || !panel.open) return null
@@ -80,11 +82,12 @@ export function FloatingPanel({ id, title, defaultPosition, closable = true, chi
   return (
     <div
       ref={ref}
-      className={`absolute pointer-events-auto ${posClass} min-w-[180px] max-w-[320px] rounded-lg border bg-card/95 backdrop-blur-sm shadow-lg`}
+      className={`absolute pointer-events-auto ${posClass} min-w-[180px] rounded-lg border bg-card/95 backdrop-blur-sm shadow-lg`}
       style={style}
-      onPointerDown={() => bringToFront(id)}
+      onPointerDown={(e) => { e.stopPropagation(); bringToFront(id) }}
     >
       <div
+        ref={titleRef}
         className="flex items-center gap-1 px-2 py-1 cursor-grab active:cursor-grabbing select-none border-b bg-muted/50 rounded-t-lg"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -101,7 +104,7 @@ export function FloatingPanel({ id, title, defaultPosition, closable = true, chi
         )}
       </div>
       {!panel.collapsed && (
-        <div className="p-2 text-xs space-y-1 max-h-[300px] overflow-auto">
+        <div className="p-2 text-xs space-y-1 overflow-auto">
           {children}
         </div>
       )}
