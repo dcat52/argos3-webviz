@@ -149,11 +149,21 @@ export function VizConfigPanel() {
                 checked={active?.enabled ?? false}
                 onCheckedChange={(v) => {
                   const next = config.labels.filter((l) => l.field !== f.fieldName)
-                  if (v) next.push({ enabled: true, field: f.fieldName })
+                  if (v) next.push({ enabled: true, field: f.fieldName, display: f.type === 'number' ? 'bar' : 'text' })
                   setConfig({ labels: next })
                 }}
               />
-              <Label className="text-xs">{f.fieldName}</Label>
+              <Label className="text-xs flex-1">{f.fieldName}</Label>
+              {active?.enabled && (
+                <select className="h-5 text-[10px] bg-background border rounded px-1" value={active.display ?? 'text'} onChange={(e) => {
+                  const next = config.labels.map((l) => l.field === f.fieldName ? { ...l, display: e.target.value as 'text' | 'bar' | 'badge' } : l)
+                  setConfig({ labels: next })
+                }}>
+                  <option value="text">Text</option>
+                  {f.type === 'number' && <option value="bar">Bar</option>}
+                  <option value="badge">Badge</option>
+                </select>
+              )}
             </div>
           )
         })}
