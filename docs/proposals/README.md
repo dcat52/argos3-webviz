@@ -50,14 +50,13 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-| PN | Title | Status |
-|----|-------|--------|
-| PN-022 | [Proximity Ray Frame Fix](PN-022-proximity-ray-frame-fix.md) | 🟣 VERIFICATION |
+None.
 
 ## Completed Proposals
 
 | PN | Title | Completed |
 |----|-------|-----------|
+| PN-022 | Proximity Ray Frame Fix | 2026-04-26 |
 | PN-021 | Render Tiers | 2026-04-26 |
 | PN-020 | Feature Registry | 2026-04-26 |
 | PN-019 | Entity Manipulation & Spawning | 2026-04-26 |
@@ -79,7 +78,7 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 | PN-001 | Client-Next Default | 2026-04-13 |
 
 ## Future Proposals
-See [FUTURE.md](FUTURE.md) for PN-015, PN-018, and other ideas not yet started.
+See [FUTURE.md](FUTURE.md) for ideas not yet started.
 
 ## Parity Tracking
 
