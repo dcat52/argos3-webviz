@@ -4,7 +4,7 @@ Created: 2026-04-21
 Baseline Commit: `b77a8d9` (`master`)
 GitHub Issue: N/A
 
-## Status: 🔵 IMPLEMENTATION
+## Status: 🟣 VERIFICATION
 <!-- 📋 INVESTIGATION → 🔍 CRITIQUE → 🟡 DESIGN → 🔍 CRITIQUE → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -220,15 +220,15 @@ Verify these before starting. If any are false, revisit the design.
 ## Done When
 
 - [x] Drag-to-move: Ctrl+hold freezes camera, click-drag entity → entity moves → server confirms new position
-- [ ] Spawn: select entity type from palette → click ground to place → entity appears in simulation (currently spawns at computed position, not click-to-place)
+- [x] Spawn: select entity type from palette → click ground to place → entity appears in simulation
 - [x] Spawn robot: select foot-bot → pick controller from dropdown → spawn → robot runs controller
 - [x] Delete: select entity → delete button → entity removed from simulation
-- [ ] Distribute: configure type/quantity/method/bounds → see ghost preview → commit → entities appear (backend done, UI panel not yet)
-- [ ] Ghost preview: adjusting distribute params updates ghost positions in real-time without server round-trip (renderer support done, UI not wired)
+- [x] Distribute: configure type/quantity/method/bounds → see ghost preview → commit → entities appear
+- [x] Ghost preview: adjusting distribute params updates ghost positions in real-time without server round-trip
 - [x] Metadata: client receives available entity types and controller IDs from server on connect
 - [x] Camera controls don't interfere with entity dragging (Ctrl+hold gating)
 - [x] Existing entity selection, fly-to, and rendering still work
-- [ ] User function hooks: EntityMoved called when entity is dragged (hooks defined, not yet called from handlers)
+- [x] User function hooks: EntityMoved called when entity is dragged
 
 ## Verification Strategy
 
@@ -351,6 +351,7 @@ Resolution: `StepExperiment()` drains the command queue before calling `UpdateSp
 | 2026-04-21 | Full implementation: C++ command queue, addEntity/removeEntity/distribute/getMetadata handlers, delta removal, user function hooks. Client: protocol types, stores, all 7 renderers updated, useDrag hook, SpawnPalette, distribute algorithm. 87 tests pass. C++ compiles with argos.sif. | 🔵 IMPLEMENTATION |
 | 2026-04-21 | Live testing with ARGoS3 via apptainer. End-to-end spawn/delete verified. Fixed pre-existing build issues (recorder namespace, GetBodyColor guard, loop_functions include). | 🟣 VERIFICATION |
 | 2026-04-21 | UI wiring: Ctrl+hold freezes camera for drag-to-move. SpawnPalette with center/random/grid modes + quantity slider. Deconflicted spawn positions. Metadata embedded in broadcasts. Instanced mesh entityIds for drag raycasting. Broadcast suppression during drag (no snap-back). | 🟣 VERIFICATION |
+| 2026-04-26 | UX unification: shared EntityPicker, PlaceParams floating toolbar, drag-to-aim with heading line, random heading for distribute/batch. EntityMoved hook wired in C++. All done-when criteria met. | 🟣 VERIFICATION |
 
 ## Known Limitations & Future Work
 

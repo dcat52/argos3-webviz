@@ -52,7 +52,7 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 | PN | Title | Status | Effort | GitHub Issue |
 |----|-------|--------|--------|-------------|
-| PN-019 | [Entity Manipulation & Spawning](PN-019-entity-manipulation.md) | 🔵 IMPLEMENTATION | ~20h | — |
+| PN-019 | [Entity Manipulation & Spawning](PN-019-entity-manipulation.md) | 🟣 VERIFICATION | ~20h | — |
 
 ## Completed Proposals
 

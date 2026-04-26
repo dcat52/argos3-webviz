@@ -1003,8 +1003,13 @@ namespace argos {
         }
       }
 
+      CVector3 cOldPos = pcEntity->GetOriginAnchor().Position;
       if (pcEntity->MoveTo(c_pos, c_orientation)) {
         LOG << "[INFO] Entity Moved (" + str_entity_id + ")" << '\n';
+        /* Call user function hook */
+        if (m_pcUserFunctions != nullptr) {
+          m_pcUserFunctions->EntityMoved(*cEntity, cOldPos, c_pos);
+        }
       } else {
         LOGERR << "[WARNING] Entity cannot be moved, collision detected. (" +
                     str_entity_id + ")"
