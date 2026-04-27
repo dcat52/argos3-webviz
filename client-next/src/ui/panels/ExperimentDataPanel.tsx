@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { FloatingPanel } from '../FloatingPanel'
 
-const HIDDEN_KEYS = new Set(['_draw', '_events', '_viz_hints', 'available_scenes', 'current_scene'])
+const HIDDEN_KEYS = new Set(['_draw', '_events', '_viz_hints', '_ui', 'available_scenes', 'current_scene'])
 
 function formatValue(v: unknown): string {
   if (v === null || v === undefined) return '—'

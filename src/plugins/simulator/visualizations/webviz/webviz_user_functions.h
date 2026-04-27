@@ -24,9 +24,21 @@ namespace argos {
 #include <argos3/core/utility/plugins/factory.h>
 
 #include <functional>
+#include <string>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 namespace argos {
+
+  /** Descriptor for a UI control declared by user functions */
+  struct SWebvizUIControl {
+    std::string Id;
+    std::string Type;     // "button", "slider", "toggle", "dropdown"
+    std::string Label;
+    nlohmann::json Config; // type-specific: min, max, value, options, etc.
+    std::function<void(const nlohmann::json&)> Callback;
+  };
+
   class CWebvizUserFunctions : public CBaseConfigurableResource {
    public:
     /**
@@ -82,6 +94,41 @@ namespace argos {
      * @return const nlohmann::json
      */
     virtual const nlohmann::json sendUserData() { return nullptr; }
+
+    // --- UI Control API ---
+
+    /** Add a button control */
+    void AddButton(const std::string& str_id,
+                   const std::string& str_label,
+                   std::function<void()> fn_callback);
+
+    /** Add a slider control */
+    void AddSlider(const std::string& str_id,
+                   const std::string& str_label,
+                   Real f_min, Real f_max, Real f_value,
+                   std::function<void(Real)> fn_callback);
+
+    /** Add a toggle control */
+    void AddToggle(const std::string& str_id,
+                   const std::string& str_label,
+                   bool b_value,
+                   std::function<void(bool)> fn_callback);
+
+    /** Add a dropdown control */
+    void AddDropdown(const std::string& str_id,
+                     const std::string& str_label,
+                     const std::vector<std::string>& vec_options,
+                     const std::string& str_value,
+                     std::function<void(const std::string&)> fn_callback);
+
+    /** Update a control's current value (reflected to client next tick) */
+    void SetControlValue(const std::string& str_id, const nlohmann::json& c_value);
+
+    /** Serialize all registered controls as JSON array */
+    nlohmann::json SerializeControls() const;
+
+    /** Dispatch a ui_action command to the appropriate callback */
+    void DispatchUIAction(const nlohmann::json& c_command);
 
     /**
      * Registers a user method.
@@ -154,6 +201,9 @@ namespace argos {
      * @see CFunctionHolder
      */
     std::vector<CFunctionHolder*> m_vecFunctionHolders;
+
+    /** Registered UI controls */
+    std::vector<SWebvizUIControl> m_vecUIControls;
   };
 
   /****************************************/

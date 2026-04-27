@@ -2,6 +2,7 @@ import { ExperimentDataPanel } from './panels/ExperimentDataPanel'
 import { EventLogPanel } from './panels/EventLogPanel'
 import { EntityDebugPanel } from './panels/EntityDebugPanel'
 import { WatchListPanel } from './panels/WatchListPanel'
+import { LoopFunctionPanel } from './panels/LoopFunctionPanel'
 
 export function PanelLayer() {
   return (
@@ -10,6 +11,7 @@ export function PanelLayer() {
       <EventLogPanel />
       <EntityDebugPanel />
       <WatchListPanel />
+      <LoopFunctionPanel />
     </div>
   )
 }
