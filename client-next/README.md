@@ -1,50 +1,69 @@
-# React + TypeScript + Vite
+# ARGoS3-Webviz Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern web client for ARGoS3-Webviz. Renders the simulation in 3D, provides entity interaction, and displays live experiment data — all in the browser.
 
-Currently, two official plugins are available:
+## Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Vite 5** — build and dev server
+- **React 19** + **TypeScript** (strict)
+- **React Three Fiber** + **Drei** — 3D rendering
+- **Zustand** — state management
+- **Tailwind v4** — styling
+- **Vitest** — unit tests
+- **Playwright** — integration tests
 
-## Expanding the ESLint configuration
+## Development
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
-
-- Configure the top-level `parserOptions` property like this:
-
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```console
+$ npm install
+$ npm run dev          # Vite dev server → http://localhost:5173
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+### Mock Server
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+Run without ARGoS using the built-in mock WebSocket server:
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+```console
+$ npm run mock         # default scenario
+$ npm run mock:swarm   # swarm scenario
+$ npm run mock:stress  # stress test (many entities)
+$ npm run mock:delta   # delta encoding mode
 ```
+
+See `package.json` for all mock scenarios.
+
+### Testing
+
+```console
+$ npm test                # unit tests (vitest)
+$ npm run test:watch      # unit tests in watch mode
+$ npm run test:integration  # integration tests (playwright)
+```
+
+### Build
+
+```console
+$ npm run build        # type-check + production build
+$ npm run preview      # preview production build
+```
+
+## Project Structure
+
+```
+src/
+  components/ui/   Reusable UI primitives
+  dashboard/       Multi-experiment dashboard
+  entities/        Entity renderers (register in renderers/index.ts)
+  hooks/           Custom React hooks
+  mock/            Mock WebSocket server
+  protocol/        WebSocket message handling
+  scene/           Three.js scene setup
+  stores/          Zustand stores (one per concern)
+  types/           TypeScript type definitions
+  ui/              Application UI (toolbar, panels, sidebar)
+  ui/panels/       Floating panel components
+```
+
+## Contributing
+
+See [docs/CONTRIBUTING.md](../docs/CONTRIBUTING.md) for conventions, branch naming, proposal workflow, and style guides.
