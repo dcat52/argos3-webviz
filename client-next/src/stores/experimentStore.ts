@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type Vec3, type Quaternion } from '../types/protocol'
+import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type UIControl, type Vec3, type Quaternion } from '../types/protocol'
 import { computeFields } from '../lib/computedFields'
 
 function extractDraw(userData: unknown): DrawCommand[] {
@@ -30,6 +30,13 @@ function savePinnedFields(pins: PinnedField[]) {
   localStorage.setItem('webviz-pinned-fields', JSON.stringify(pins))
 }
 
+function extractUI(userData: unknown): UIControl[] {
+  if (!userData || typeof userData !== 'object') return []
+  const ud = userData as Record<string, unknown>
+  if (!Array.isArray(ud._ui)) return []
+  return ud._ui.filter((c: unknown) => c && typeof c === 'object' && 'type' in (c as object) && 'id' in (c as object)) as UIControl[]
+}
+
 interface ExperimentState_ {
   state: ExperimentState
   steps: number
@@ -41,6 +48,7 @@ interface ExperimentState_ {
   computedFields: Map<string, Record<string, unknown>>
   drawCommands: DrawCommand[]
   floorData: FloorColorGrid | null
+  uiControls: UIControl[]
   userData: unknown
   selectedEntityId: string | null
   dragEntityId: string | null
@@ -72,6 +80,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   computedFields: new Map(),
   drawCommands: [],
   floorData: null,
+  uiControls: [],
   userData: undefined,
   selectedEntityId: null,
   dragEntityId: null,
@@ -119,6 +128,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       computedFields: computeFields(next, prev, msg.arena),
       drawCommands: extractDraw(msg.user_data),
       floorData: extractFloor(msg.user_data),
+      uiControls: extractUI(msg.user_data),
       userData: msg.user_data,
     })
   },
@@ -140,6 +150,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       computedFields: computeFields(next, prev, msg.arena),
       drawCommands: extractDraw(msg.user_data),
       floorData: extractFloor(msg.user_data),
+      uiControls: extractUI(msg.user_data),
       userData: msg.user_data,
     })
   },
@@ -176,6 +187,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       computedFields: computeFields(next, prev, arena),
       drawCommands: extractDraw(msg.user_data ?? get().userData),
       floorData: extractFloor(msg.user_data ?? get().userData),
+      uiControls: extractUI(msg.user_data ?? get().userData),
       userData: msg.user_data ?? get().userData,
     })
   },

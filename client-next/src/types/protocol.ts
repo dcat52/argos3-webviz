@@ -267,3 +267,11 @@ export interface FloorColorGrid {
   size: [number, number]
   colors: string // base64-encoded RGB bytes
 }
+
+// --- UI Controls (from user_data._ui) ---
+
+export type UIControl =
+  | { type: 'button'; id: string; label: string }
+  | { type: 'slider'; id: string; label: string; min: number; max: number; value: number }
+  | { type: 'toggle'; id: string; label: string; value: boolean }
+  | { type: 'dropdown'; id: string; label: string; options: string[]; value: string }

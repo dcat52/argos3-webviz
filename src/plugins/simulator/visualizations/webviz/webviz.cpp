@@ -559,6 +559,10 @@ namespace argos {
       } else if (strCmd.compare("getMetadata") == 0) {
         /* Metadata is embedded in every broadcast — no separate response needed */
 
+      } else if (strCmd.compare("ui_action") == 0) {
+        /* UI control interaction from client */
+        m_pcUserFunctions->DispatchUIAction(c_json_command);
+
       } else {
         /* "command" key has unknown value */
         try {
@@ -941,6 +945,16 @@ namespace argos {
     if (!user_data.is_null() && m_bSendGlobalData) {
       cStateJson["user_data"] = user_data;
     }
+
+    /* Inject UI controls if any are registered */
+    nlohmann::json cUIControls = m_pcUserFunctions->SerializeControls();
+    if (!cUIControls.is_null()) {
+      if (!cStateJson.contains("user_data") || cStateJson["user_data"].is_null()) {
+        cStateJson["user_data"] = nlohmann::json::object();
+      }
+      cStateJson["user_data"]["_ui"] = std::move(cUIControls);
+    }
+
     /* Added Unix Epoch in milliseconds */
     cStateJson["timestamp"] =
       std::chrono::duration_cast<std::chrono::milliseconds>(
