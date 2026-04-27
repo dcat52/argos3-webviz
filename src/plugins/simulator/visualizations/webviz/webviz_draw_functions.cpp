@@ -82,6 +82,15 @@ namespace argos {
       }
     }
 
+    const nlohmann::json CWebvizDrawFunctions::sendUserData() {
+      nlohmann::json result;
+      auto draws = GetDrawCommands();
+      if (!draws.empty()) result["_draw"] = std::move(draws);
+      auto floor = GetFloorData();
+      if (!floor.is_null()) result["_floor"] = std::move(floor);
+      return result;
+    }
+
     nlohmann::json CWebvizDrawFunctions::GetDrawCommands() {
       nlohmann::json result = std::move(m_vecWorldDraws);
       m_vecWorldDraws.clear();
@@ -115,7 +124,10 @@ namespace argos {
         const CVector3& c_arena_size, const CVector3& c_arena_center) {
       m_vecWorldDraws.clear();
       DrawInWorld();
-      SampleFloor(c_arena_size, c_arena_center);
+      if (m_bFloorDirty) {
+        SampleFloor(c_arena_size, c_arena_center);
+        m_bFloorDirty = false;
+      }
     }
 
   }  // namespace Webviz

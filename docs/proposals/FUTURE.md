@@ -23,6 +23,13 @@ These are behind feature flags and need polish before becoming stable:
 - **Distribute** — functional but UX needs work
 - **Viz Presets** — depends on other experimental features
 
+### User Data Field Pinning / Watch List
+~~Pin specific user_data fields to always show in the inspector, even when switching entities. Discovered during PN-025.~~
+→ **Proposal PN-028 created** (#57)
+
+### Per-Entity-Type User Data Filtering
+Filter user_data by entity type in the `.argos` config (e.g., only send for foot-bots). Discovered during PN-026.
+
 ## External / Out of Scope
 - **Spiri entity** — external plugin, not in this repo
 - **glTF foot-bot model** — upgrade from procedural to loaded model (nice-to-have, current procedural model is functional)

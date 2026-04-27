@@ -25,11 +25,14 @@ The drawing methods have **identical signatures**:
 
 ## How It Works
 
-1. Your `DrawInWorld()` is called before each broadcast
-2. Each `DrawCircle`/`DrawCylinder`/etc. call serializes the shape as JSON
-3. Shapes are sent in `user_data._draw` array
-4. Client-next renders them as Three.js meshes
-5. Draw buffer is cleared after each broadcast
+1. Override `DrawInWorld()` to draw world-space shapes each tick
+2. Each `DrawCircle`/`DrawCylinder`/etc. call buffers the shape as JSON
+3. The framework calls `PreBroadcast()` automatically before each WebSocket broadcast
+4. Shapes are injected into `user_data._draw`, floor data into `user_data._floor`
+5. Client-next renders them as Three.js meshes
+6. Draw buffer is cleared after each broadcast
+
+No manual wiring needed — just subclass `CWebvizDrawFunctions` and override `DrawInWorld()`.
 
 ## Floor Painting
 
@@ -37,7 +40,6 @@ Override `GetFloorColor()` — same as the QT-OpenGL loop functions hook:
 
 ```cpp
 CColor CMyViz::GetFloorColor(Real f_x, Real f_y) {
-    // Return color at world position (f_x, f_y)
     if (IsInNest(f_x, f_y)) return CColor::GRAY;
     if (IsFood(f_x, f_y)) return CColor::BLACK;
     return CColor::WHITE;
@@ -45,6 +47,14 @@ CColor CMyViz::GetFloorColor(Real f_x, Real f_y) {
 ```
 
 The floor is sampled on a 64×64 grid (configurable via `SetFloorResolution()`).
+It samples once on startup, then only when you call `SetFloorChanged()`:
+
+```cpp
+void CMyViz::PostStep() {
+    // Call when the floor colors need to be re-sampled
+    SetFloorChanged();
+}
+```
 
 ## Per-Entity Drawing
 
