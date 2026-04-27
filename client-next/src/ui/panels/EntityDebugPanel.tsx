@@ -49,6 +49,9 @@ function LedSwatches({ colors }: { colors: string[] }) {
 }
 
 function EntityContent({ entity, computed }: { entity: AnyEntity; computed: Record<string, unknown> | undefined }) {
+  const { pinField, unpinField, isFieldPinned } = useExperimentStore(
+    useShallow((s) => ({ pinField: s.pinField, unpinField: s.unpinField, isFieldPinned: s.isFieldPinned }))
+  )
   if (!('position' in entity)) return <p className="text-xs text-muted-foreground">No spatial data</p>
 
   const hasLeds = 'leds' in entity && Array.isArray(entity.leds) && entity.leds.length > 0
@@ -106,7 +109,15 @@ function EntityContent({ entity, computed }: { entity: AnyEntity; computed: Reco
       {entity.user_data !== undefined && (
         <Sect title="User Data" defaultOpen={false}>
           <div className="pl-2">
-            <UserDataView data={entity.user_data} />
+            <UserDataView
+              data={entity.user_data}
+              entityId={entity.id}
+              onPinField={(field) => {
+                if (isFieldPinned(entity.id, field)) unpinField(entity.id, field)
+                else pinField(entity.id, field)
+              }}
+              isFieldPinned={(field) => isFieldPinned(entity.id, field)}
+            />
           </div>
         </Sect>
       )}

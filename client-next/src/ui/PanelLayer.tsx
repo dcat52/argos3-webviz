@@ -1,6 +1,7 @@
 import { ExperimentDataPanel } from './panels/ExperimentDataPanel'
 import { EventLogPanel } from './panels/EventLogPanel'
 import { EntityDebugPanel } from './panels/EntityDebugPanel'
+import { WatchListPanel } from './panels/WatchListPanel'
 
 export function PanelLayer() {
   return (
@@ -8,6 +9,7 @@ export function PanelLayer() {
       <ExperimentDataPanel />
       <EventLogPanel />
       <EntityDebugPanel />
+      <WatchListPanel />
     </div>
   )
 }
