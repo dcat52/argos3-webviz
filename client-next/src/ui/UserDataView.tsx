@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronRight, ChevronDown } from 'lucide-react'
+import { ChevronRight, ChevronDown, Pin } from 'lucide-react'
 
 const MAX_DEPTH = 3
 
@@ -11,11 +11,20 @@ function formatScalar(v: unknown): string {
   return String(v)
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, value, onPin, pinned }: { label: string; value: string; onPin?: () => void; pinned?: boolean }) {
   return (
-    <div className="flex justify-between items-baseline py-px">
+    <div className="flex items-baseline py-px group/row">
       <span className="text-[10px] text-muted-foreground truncate mr-2">{label}</span>
-      <span className="text-[10px] font-mono text-right">{value}</span>
+      <span className="text-[10px] font-mono text-right ml-auto">{value}</span>
+      {onPin && (
+        <button
+          onClick={onPin}
+          className={`ml-1 shrink-0 ${pinned ? 'text-yellow-500' : 'text-muted-foreground/0 group-hover/row:text-muted-foreground/60'} hover:text-yellow-500`}
+          title={pinned ? 'Unpin from watch list' : 'Pin to watch list'}
+        >
+          <Pin className="h-2.5 w-2.5" />
+        </button>
+      )}
     </div>
   )
 }
@@ -34,11 +43,11 @@ function CollapsibleRow({ label, summary, children }: { label: string; summary: 
   )
 }
 
-function DataNode({ label, value, depth }: { label: string; value: unknown; depth: number }) {
-  if (value === null || value === undefined) return <Row label={label} value="—" />
+function DataNode({ label, value, depth, onPin, pinned }: { label: string; value: unknown; depth: number; onPin?: () => void; pinned?: boolean }) {
+  if (value === null || value === undefined) return <Row label={label} value="—" onPin={onPin} pinned={pinned} />
 
   if (Array.isArray(value)) {
-    if (depth >= MAX_DEPTH) return <Row label={label} value={`[${value.length} items]`} />
+    if (depth >= MAX_DEPTH) return <Row label={label} value={`[${value.length} items]`} onPin={onPin} pinned={pinned} />
     return (
       <CollapsibleRow label={label} summary={`[${value.length}]`}>
         {value.map((item, i) => <DataNode key={i} label={String(i)} value={item} depth={depth + 1} />)}
@@ -48,7 +57,7 @@ function DataNode({ label, value, depth }: { label: string; value: unknown; dept
 
   if (typeof value === 'object') {
     const keys = Object.keys(value)
-    if (depth >= MAX_DEPTH) return <Row label={label} value={`{${keys.length} keys}`} />
+    if (depth >= MAX_DEPTH) return <Row label={label} value={`{${keys.length} keys}`} onPin={onPin} pinned={pinned} />
     return (
       <CollapsibleRow label={label} summary={`{${keys.length}}`}>
         {keys.map((k) => <DataNode key={k} label={k} value={(value as Record<string, unknown>)[k]} depth={depth + 1} />)}
@@ -56,10 +65,17 @@ function DataNode({ label, value, depth }: { label: string; value: unknown; dept
     )
   }
 
-  return <Row label={label} value={formatScalar(value)} />
+  return <Row label={label} value={formatScalar(value)} onPin={onPin} pinned={pinned} />
 }
 
-export function UserDataView({ data }: { data: unknown }) {
+interface UserDataViewProps {
+  data: unknown
+  entityId?: string
+  onPinField?: (field: string) => void
+  isFieldPinned?: (field: string) => boolean
+}
+
+export function UserDataView({ data, entityId, onPinField, isFieldPinned }: UserDataViewProps) {
   if (data === null || data === undefined) return null
   if (typeof data !== 'object') return <Row label="value" value={formatScalar(data)} />
 
@@ -69,7 +85,16 @@ export function UserDataView({ data }: { data: unknown }) {
 
   return (
     <div className="space-y-0">
-      {entries.map(([k, v]) => <DataNode key={k} label={k} value={v} depth={0} />)}
+      {entries.map(([k, v]) => (
+        <DataNode
+          key={k}
+          label={k}
+          value={v}
+          depth={0}
+          onPin={onPinField && entityId ? () => onPinField(k) : undefined}
+          pinned={isFieldPinned ? isFieldPinned(k) : undefined}
+        />
+      ))}
     </div>
   )
 }

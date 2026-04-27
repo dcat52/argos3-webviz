@@ -17,6 +17,19 @@ function extractFloor(userData: unknown): FloorColorGrid | null {
   return f
 }
 
+export type PinnedField = { entityId: string; field: string }
+
+function loadPinnedFields(): PinnedField[] {
+  try {
+    const raw = localStorage.getItem('webviz-pinned-fields')
+    return raw ? JSON.parse(raw) : []
+  } catch { return [] }
+}
+
+function savePinnedFields(pins: PinnedField[]) {
+  localStorage.setItem('webviz-pinned-fields', JSON.stringify(pins))
+}
+
 interface ExperimentState_ {
   state: ExperimentState
   steps: number
@@ -32,6 +45,10 @@ interface ExperimentState_ {
   selectedEntityId: string | null
   dragEntityId: string | null
   debugPinnedIds: Set<string>
+  pinnedFields: PinnedField[]
+  pinField: (entityId: string, field: string) => void
+  unpinField: (entityId: string, field: string) => void
+  isFieldPinned: (entityId: string, field: string) => boolean
   applyBroadcast: (msg: BroadcastMessage) => void
   applySchema: (msg: SchemaMessage) => void
   applyDelta: (msg: DeltaMessage) => void
@@ -59,6 +76,25 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   selectedEntityId: null,
   dragEntityId: null,
   debugPinnedIds: new Set(),
+  pinnedFields: loadPinnedFields(),
+
+  pinField: (entityId, field) => {
+    const pins = get().pinnedFields
+    if (pins.some(p => p.entityId === entityId && p.field === field)) return
+    const next = [...pins, { entityId, field }]
+    savePinnedFields(next)
+    set({ pinnedFields: next })
+  },
+
+  unpinField: (entityId, field) => {
+    const next = get().pinnedFields.filter(p => !(p.entityId === entityId && p.field === field))
+    savePinnedFields(next)
+    set({ pinnedFields: next })
+  },
+
+  isFieldPinned: (entityId, field) => {
+    return get().pinnedFields.some(p => p.entityId === entityId && p.field === field)
+  },
 
   applyBroadcast: (msg) => {
     const prev = get().entities

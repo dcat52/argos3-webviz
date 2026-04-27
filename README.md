@@ -37,6 +37,7 @@ The project has two parts:
 **Interaction**
 - Entity selection, inspection panel with live data
 - Entity dragging (Ctrl+click-drag), spawning (click-to-place with drag-to-aim), deletion
+- Pin user_data fields to a watch list that persists across entity selection
 - Keyboard shortcuts for common actions
 
 **Simulation Control**
