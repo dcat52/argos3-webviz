@@ -1,5 +1,6 @@
 # Usage
 - [Basic usage and configuration](basic_usage.md)
+- [Implementing user functions](USER_FUNCTIONS.md) — complete guide for external projects
 - [Sending data from server to client](sending_data_from_server.md)
 - [Sending data from client to server](sending_data_from_client.md)
 - [Draw functions — porting from QT-OpenGL](DRAW_FUNCTIONS.md)
