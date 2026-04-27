@@ -2,6 +2,8 @@
 - [Basic usage and configuration](basic_usage.md)
 - [Sending data from server to client](sending_data_from_server.md)
 - [Sending data from client to server](sending_data_from_client.md)
+- [Draw functions — porting from QT-OpenGL](DRAW_FUNCTIONS.md)
+- [UI controls — custom loop function widgets](UI_CONTROLS.md)
 
 ## Supporting a new Entity
 
