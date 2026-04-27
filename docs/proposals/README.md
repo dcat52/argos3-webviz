@@ -50,7 +50,11 @@ See [TEMPLATE.md](TEMPLATE.md) for the standard proposal format.
 
 ## Active Proposals
 
-None.
+| PN | Title | Phase | Issue |
+|----|-------|-------|-------|
+| PN-028 | User Data Field Pinning / Watch List | 📋 INVESTIGATION | #57 |
+| PN-029 | Draw Functions Auto-Wiring | 📋 INVESTIGATION | #58 |
+| PN-030 | Web Loop Function UI Controls | 📋 INVESTIGATION | #59 |
 
 ## Completed Proposals
 

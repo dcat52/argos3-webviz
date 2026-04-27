@@ -10,6 +10,7 @@
  */
 
 #include "webviz.h"
+#include "webviz_draw_functions.h"
 
 #include <unordered_map>
 #include <unordered_set>
@@ -909,14 +910,6 @@ namespace argos {
       cStateJson["entities"] = std::move(cCurrentEntities);
     }
 
-    /************* get data from User functions for experiment *************/
-
-    const nlohmann::json& user_data = m_pcUserFunctions->sendUserData();
-
-    if (!user_data.is_null() && m_bSendGlobalData) {
-      cStateJson["user_data"] = user_data;
-    }
-
     /************* Add other information about experiment *************/
 
     /* Get Arena details */
@@ -933,6 +926,21 @@ namespace argos {
 
     // TODO: m_cSpace.GetArenaLimits();
 
+    /************* Draw functions pre-broadcast *************/
+
+    auto* pcDrawFunctions =
+      dynamic_cast<Webviz::CWebvizDrawFunctions*>(m_pcUserFunctions);
+    if (pcDrawFunctions != nullptr) {
+      pcDrawFunctions->PreBroadcast(cArenaSize, cArenaCenter);
+    }
+
+    /************* get data from User functions for experiment *************/
+
+    const nlohmann::json& user_data = m_pcUserFunctions->sendUserData();
+
+    if (!user_data.is_null() && m_bSendGlobalData) {
+      cStateJson["user_data"] = user_data;
+    }
     /* Added Unix Epoch in milliseconds */
     cStateJson["timestamp"] =
       std::chrono::duration_cast<std::chrono::milliseconds>(

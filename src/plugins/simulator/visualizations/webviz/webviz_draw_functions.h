@@ -34,6 +34,9 @@ namespace argos {
       /** Override to draw world-space shapes each tick */
       virtual void DrawInWorld() {}
 
+      /** Auto-injects _draw and _floor into user_data */
+      const nlohmann::json sendUserData() override;
+
       // --- Drawing primitives (mirror QT-OpenGL API) ---
 
       void DrawCircle(const CVector3& c_position,
@@ -61,6 +64,9 @@ namespace argos {
 
       /** Set floor grid resolution (default 64) */
       void SetFloorResolution(UInt32 un_resolution) { m_unFloorResolution = un_resolution; }
+
+      /** Mark floor as needing re-sample next tick */
+      void SetFloorChanged() { m_bFloorDirty = true; }
 
       /** Sample GetFloorColor() on a grid and store result */
       void SampleFloor(const CVector3& c_arena_size, const CVector3& c_arena_center);

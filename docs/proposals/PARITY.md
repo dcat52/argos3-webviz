@@ -15,5 +15,5 @@ Items needed to match QT-OpenGL functionality.
 
 ## ⬜ Not Yet Implemented
 - Entity rotation via UI (QT-OpenGL has rotation handles)
-- Floor texture rendering from loop functions (partial — DynamicFloor exists)
-- OpenGL loop functions (QT-specific, not applicable to web)
+- Floor texture rendering from loop functions (partial — DynamicFloor exists, wiring gap → PN-029)
+- OpenGL loop functions (QT-specific, web equivalent → PN-030)
