@@ -6,127 +6,110 @@
 
 <br/>
 <p align="center">
-    <a href="https://github.com/NESTLab/argos3-webviz/blob/master/LICENSE" target="_blank">
-        <img src="https://img.shields.io/github/license/NESTLab/argos3-webviz.svg" alt="GitHub license">
+    <a href="https://github.com/dcat52/argos3-webviz/actions/workflows/test.yml">
+        <img src="https://github.com/dcat52/argos3-webviz/actions/workflows/test.yml/badge.svg" alt="Tests">
     </a>
-    <a href="https://github.com/NESTLab/argos3-webviz/releases" target="_blank">
-        <img src="https://img.shields.io/github/tag/NESTLab/argos3-webviz.svg" alt="GitHub tag (latest SemVer)">
+    <a href="https://github.com/dcat52/argos3-webviz/blob/master/LICENSE" target="_blank">
+        <img src="https://img.shields.io/github/license/dcat52/argos3-webviz.svg" alt="GitHub license">
     </a>
-    <a href="https://github.com/NESTLab/argos3-webviz/commits/master" target="_blank">
-        <img src="https://img.shields.io/github/commit-activity/m/NESTLab/argos3-webviz.svg" alt="GitHub commit activity">
-    </a>
-    <img src="https://img.shields.io/github/last-commit/NESTLab/argos3-webviz" alt="GitHub last commit" />
-    <img src="https://visitor-badge.glitch.me/badge?page_id=NESTlab.argos3-webviz" alt="Visitors" />
-    <br>
-    <a href="https://bestpractices.coreinfrastructure.org/projects/3966">
-        <img src="https://bestpractices.coreinfrastructure.org/projects/3966/badge">
-    </a>
-    <a href="https://www.codacy.com/gh/NESTLab/argos3-webviz?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=NESTLab/argos3-webviz&amp;utm_campaign=Badge_Grade">
-        <img src="https://app.codacy.com/project/badge/Grade/0a95aa1f585e403e899710bf626b1f82"/>
-    </a>
+    <img src="https://img.shields.io/github/last-commit/dcat52/argos3-webviz" alt="GitHub last commit" />
 </p>
 <br/>
 
-
 # ARGoS3-Webviz
 
-> **⚠️ Fork Notice:** This is a development fork of [NESTLab/argos3-webviz](https://github.com/NESTLab/argos3-webviz). The `client-next` branch contains experimental work (modern React client, proposals, new features). **Do not push to upstream.** Any upstream contributions are a manual process.
+A web-based visualization and interaction plugin for [ARGoS 3](https://www.argos-sim.info/). Replaces the QT-OpenGL viewer with a browser UI — connect from any machine on the network, no native GUI required.
 
-A Web interface plugin for [ARGoS 3](https://www.argos-sim.info/).
+The project has two parts:
 
-| All builds | Ubuntu 16.04  | Ubuntu 18.04  | Mac OSX |
-|:-:|:-:|:-:|:-:|
-| [![Travis build](https://img.shields.io/travis/com/NESTLab/argos3-webviz)](https://travis-ci.com/NESTLab/argos3-webviz) | [![Ubuntu 16.04 build](https://travis-matrix-badges.herokuapp.com/repos/NESTLab/argos3-webviz/branches/master/1?use_travis_com=true)](https://travis-ci.com/NESTLab/argos3-webviz) | [![Ubuntu 18.04 build](https://travis-matrix-badges.herokuapp.com/repos/NESTLab/argos3-webviz/branches/master/2?use_travis_com=true)](https://travis-ci.com/NESTLab/argos3-webviz) | [![MacOSX build](https://travis-matrix-badges.herokuapp.com/repos/NESTLab/argos3-webviz/branches/master/3?use_travis_com=true)](https://travis-ci.com/NESTLab/argos3-webviz) |
+- **C++ plugin** (`src/`) — ARGoS visualization module that streams simulation state over WebSockets
+- **React client** (`client-next/`) — modern 3D viewer built with React, Three.js / React Three Fiber, and TypeScript
 
 ## Features
 
-![screencast](https://raw.githubusercontent.com/wiki/NESTLab/argos3-webviz/screencast.gif)
+**3D Visualization**
+- Real-time 3D rendering of all standard ARGoS entities (foot-bot, Khepera IV, Leo, box, cylinder, light)
+- LED rendering, sensor ray visualization, draw primitives from loop functions
+- Configurable render tiers (full detail → simplified → points) for large swarms
+- Orthographic and perspective camera modes with FOV control
+- Fit-to-arena viewport on load
 
-- All communication over Websockets
-- SSL support (protocol `wss://`)
-- Only single port needed(Easier for NAT/forwarding/docker)
-- filterable channels (broadcasts, events, logs)
-- easily extendable for custom robots/entities.
-- Independent Web client files.
-- Simple client protocol, can easily be implemented in any technology
-- Using UWebSockets, which is blazing fast([Benchmarks](https://github.com/uNetworking/uWebSockets/blob/master/misc/websocket_lineup.png)).
-- The event-loop is native epoll on Linux, native kqueue on macOS
+**Interaction**
+- Entity selection, inspection panel with live data
+- Entity dragging (Ctrl+click-drag), spawning (click-to-place with drag-to-aim), deletion
+- Keyboard shortcuts for common actions
 
-## See more examples at https://github.com/NESTLab/argos3-webviz-examples
+**Simulation Control**
+- Play / pause / step / fast-forward with configurable speed multipliers
+- Timeline scrubber with keyframe-cached seek
+- Recording and replay
 
+**Data & Protocol**
+- Delta encoding for bandwidth-efficient updates
+- Computed fields and controller state exposure
+- User data display with configurable filtering via `.argos` config
+- Multi-experiment dashboard
+- Floating, resizable panels
 
-## Installing
+**Infrastructure**
+- All communication over WebSockets (single port, NAT/Docker friendly)
+- SSL support (`wss://`)
+- UWebSockets backend (epoll on Linux, kqueue on macOS)
 
-### Dependencies
-#### Homebrew 
+## Quick Start
+
+### C++ Plugin
+
+Install dependencies, then build:
+
 ```console
+# Debian/Ubuntu
+$ sudo apt install cmake git zlib1g-dev libssl-dev
+
+# macOS
 $ brew install cmake git zlib openssl
 ```
-#### Debian
-```console
-$ sudo apt install cmake git zlib1g-dev libssl-dev
-```
-#### Fedora
-```console
-$ sudo dnf install cmake git zlib-devel openssl-devel
-```
-
-You can [Download pre-compiled binaries from Releases](https://github.com/NESTLab/argos3-webviz/releases)
-
-or
-
-<details>
-<summary style="font-size:18px">Installing from source</summary>
-<br>
-
-### Requirements
-- A `UNIX` system (Linux or Mac OSX; Microsoft Windows is not supported)
-- `ARGoS 3`
-- `g++` >= 7 (on Linux)
-- `clang` >= 3.1 (on MacOSX)
-- `cmake` >= 3.5.1
-- `zlib` >= 1.x
-- `git` (for autoinstalling dependencies using Cmake `ExternalProject`)
-
-**Optional dependency**
-- `OpenSSL` >= 1.1 (for websockets over SSL)
-
-Please [install all dependencies](#installing) before continuing
-
-
-### Downloading the source-code
-```console
-$ git clone https://github.com/NESTLab/argos3-webviz
-```
-
-### Compiling
-The compilation is configured through CMake.
 
 ```console
+$ git clone https://github.com/dcat52/argos3-webviz
 $ cd argos3-webviz
-$ mkdir build
-$ cd build
+$ mkdir build && cd build
 $ cmake -DCMAKE_BUILD_TYPE=Release ../src
 $ make
 $ sudo make install
 ```
 
-You can use `-DCMAKE_BUILD_TYPE=Debug` instead of `Release` with the cmake command above to enable debugging.
+### Web Client
 
-</details>
+```console
+$ cd client-next
+$ npm install
+$ npm run mock       # start mock WebSocket server (no ARGoS needed)
+$ npm run dev        # start Vite dev server → http://localhost:5173
+```
 
+See [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for the full development guide, stack details, and proposal workflow.
 
-## Contributing
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+## Documentation
 
-Please make sure to update tests as appropriate.
-[Check full contributing info](docs/CONTRIBUTING.md)
-
-## License
-[MIT](https://choosealicense.com/licenses/mit/)
-
-Licenses of libraries used are in their respective directories.
-
+- [Basic usage and configuration](docs/basic_usage.md)
+- [Sending data from server to client](docs/sending_data_from_server.md)
+- [Sending data from client to server](docs/sending_data_from_client.md)
+- [Custom entity: server side](docs/custom_entity_serverside.md)
+- [Custom entity: client side](docs/custom_entity_clientside.md)
+- [Writing a custom client](docs/writing_custom_client.md)
+- [Contributing](docs/CONTRIBUTING.md)
 
 ## Limitations
-OpenGL Loop functions are currently neglected in this plugin, as they are QT-OpenGL specific.
+
+- Entity rotation handles not yet implemented (QT-OpenGL has these)
+- Floor texture rendering from loop functions is partial
+- OpenGL loop functions are QT-specific and not applicable to the web client
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
+
+---
+
+> **Fork notice:** This is a development fork of [NESTLab/argos3-webviz](https://github.com/NESTLab/argos3-webviz). Do not push to upstream. Any upstream contributions are a manual process.
