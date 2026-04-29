@@ -181,12 +181,18 @@ function optimizedSeek(
     startFrom = 0
   }
 
-  // Replay forward to target, tracking prevEntities at target-1
-  let prevEntities = new Map(entities)
+  // Replay forward to target, tracking prevPositions at target-1
+  let prevPositions = new Map<string, import('../types/protocol').Vec3>()
+  for (const [id, e] of entities) {
+    if ('position' in e) prevPositions.set(id, (e as any).position)
+  }
 
   for (let i = startFrom; i <= targetIdx; i++) {
     if (i === targetIdx) {
-      prevEntities = new Map(entities)
+      prevPositions = new Map<string, import('../types/protocol').Vec3>()
+      for (const [id, e] of entities) {
+        if ('position' in e) prevPositions.set(id, (e as any).position)
+      }
     }
     const frame = frames[i]
     switch (frame.type) {
@@ -227,12 +233,16 @@ function optimizedSeek(
   const drawCommands = extractDraw(userData)
   const floorData = extractFloor(userData)
 
+  // Build prevPositions from prevEntities for computeFields
+  // (prevPositions already built above during replay)
+
   // Single setState with computeFields only on the final frame
   useExperimentStore.setState({
     entities,
-    prevEntities,
+    entityGeneration: (useExperimentStore.getState().entityGeneration ?? 0) + 1,
+    prevPositions,
     arena,
-    computedFields: computeFields(entities, prevEntities, arena),
+    computedFields: computeFields(entities, prevPositions, arena),
     drawCommands,
     floorData,
     userData,

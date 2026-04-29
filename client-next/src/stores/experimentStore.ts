@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { ExperimentState, type ArenaInfo, type AnyEntity, type BroadcastMessage, type SchemaMessage, type DeltaMessage, type DrawCommand, type FloorColorGrid, type UIControl, type Vec3, type Quaternion } from '../types/protocol'
-import { computeFields } from '../lib/computedFields'
+import { computeFields, getActiveComputedFields } from '../lib/computedFields'
+import { useVizConfigStore } from './vizConfigStore'
 
 function extractDraw(userData: unknown): DrawCommand[] {
   if (!userData || typeof userData !== 'object') return []
@@ -37,6 +38,15 @@ function extractUI(userData: unknown): UIControl[] {
   return ud._ui.filter((c: unknown) => c && typeof c === 'object' && 'type' in (c as object) && 'id' in (c as object)) as UIControl[]
 }
 
+/** Extract positions from entity map for prevPositions tracking */
+function extractPositions(entities: Map<string, AnyEntity>): Map<string, Vec3> {
+  const positions = new Map<string, Vec3>()
+  for (const [id, e] of entities) {
+    if ('position' in e) positions.set(id, e.position)
+  }
+  return positions
+}
+
 interface ExperimentState_ {
   state: ExperimentState
   steps: number
@@ -44,7 +54,8 @@ interface ExperimentState_ {
   realTimeRatio: number
   arena: ArenaInfo | null
   entities: Map<string, AnyEntity>
-  prevEntities: Map<string, AnyEntity>
+  entityGeneration: number
+  prevPositions: Map<string, Vec3>
   computedFields: Map<string, Record<string, unknown>>
   drawCommands: DrawCommand[]
   floorData: FloorColorGrid | null
@@ -69,6 +80,15 @@ interface ExperimentState_ {
   toggleDebugPin: (id: string) => void
 }
 
+function computeActiveFields(
+  entities: Map<string, AnyEntity>,
+  prevPositions: Map<string, Vec3>,
+  arena: ArenaInfo | null,
+): Map<string, Record<string, unknown>> {
+  const activeFields = getActiveComputedFields(useVizConfigStore.getState().config)
+  return computeFields(entities, prevPositions, arena, activeFields)
+}
+
 export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   state: ExperimentState.EXPERIMENT_INITIALIZED,
   steps: 0,
@@ -76,7 +96,8 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   realTimeRatio: 1.0,
   arena: null,
   entities: new Map(),
-  prevEntities: new Map(),
+  entityGeneration: 0,
+  prevPositions: new Map(),
   computedFields: new Map(),
   drawCommands: [],
   floorData: null,
@@ -106,13 +127,12 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   applyBroadcast: (msg) => {
-    const prev = get().entities
+    const prevPositions = extractPositions(get().entities)
     const next = new Map<string, AnyEntity>()
     const dragId = get().dragEntityId
     for (const entity of msg.entities) {
-      // Keep local position for entity being dragged
       if (dragId && entity.id === dragId) {
-        const local = prev.get(dragId)
+        const local = get().entities.get(dragId)
         if (local) { next.set(entity.id, { ...entity, position: local.position } as AnyEntity); continue }
       }
       next.set(entity.id, entity)
@@ -124,8 +144,9 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena: msg.arena,
       entities: next,
-      prevEntities: prev,
-      computedFields: computeFields(next, prev, msg.arena),
+      entityGeneration: get().entityGeneration + 1,
+      prevPositions,
+      computedFields: computeActiveFields(next, prevPositions, msg.arena),
       drawCommands: extractDraw(msg.user_data),
       floorData: extractFloor(msg.user_data),
       uiControls: extractUI(msg.user_data),
@@ -134,7 +155,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   applySchema: (msg) => {
-    const prev = get().entities
+    const prevPositions = extractPositions(get().entities)
     const next = new Map<string, AnyEntity>()
     for (const entity of msg.entities) {
       next.set(entity.id, entity)
@@ -146,8 +167,9 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
       realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena: msg.arena,
       entities: next,
-      prevEntities: prev,
-      computedFields: computeFields(next, prev, msg.arena),
+      entityGeneration: get().entityGeneration + 1,
+      prevPositions,
+      computedFields: computeActiveFields(next, prevPositions, msg.arena),
       drawCommands: extractDraw(msg.user_data),
       floorData: extractFloor(msg.user_data),
       uiControls: extractUI(msg.user_data),
@@ -156,35 +178,48 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
   },
 
   applyDelta: (msg) => {
-    const prev = get().entities
-    const next = new Map(prev)
+    const entities = get().entities
+    const prevPositions = new Map(get().prevPositions)
 
+    // Track prev positions for changed entities
     for (const [id, changes] of Object.entries(msg.entities)) {
-      const existing = next.get(id)
-      if (existing) {
-        next.set(id, { ...existing, ...changes } as AnyEntity)
-      } else {
-        next.set(id, changes as AnyEntity)
+      if ('position' in changes) {
+        const existing = entities.get(id)
+        if (existing && 'position' in existing) {
+          prevPositions.set(id, existing.position)
+        }
       }
     }
 
-    // Handle removed entities
+    // Mutate in place
+    for (const [id, changes] of Object.entries(msg.entities)) {
+      const existing = entities.get(id)
+      if (existing) {
+        entities.set(id, { ...existing, ...changes } as AnyEntity)
+      } else {
+        entities.set(id, changes as AnyEntity)
+      }
+    }
+
     if (msg.removed) {
       for (const id of msg.removed) {
-        next.delete(id)
+        entities.delete(id)
+        prevPositions.delete(id)
       }
     }
 
     const arena = msg.arena ?? get().arena
+    const gen = get().entityGeneration + 1
     set({
       state: msg.state ?? get().state,
       steps: msg.steps ?? get().steps,
       timestamp: msg.timestamp ?? Date.now(),
       realTimeRatio: (msg as any).real_time_ratio ?? get().realTimeRatio,
       arena,
-      entities: next,
-      prevEntities: prev,
-      computedFields: computeFields(next, prev, arena),
+      entities: new Map(entities), // New reference so Zustand detects change
+      entityGeneration: gen,
+      prevPositions,
+      computedFields: computeActiveFields(entities, prevPositions, arena),
       drawCommands: extractDraw(msg.user_data ?? get().userData),
       floorData: extractFloor(msg.user_data ?? get().userData),
       uiControls: extractUI(msg.user_data ?? get().userData),
@@ -223,7 +258,7 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
     if (!entity || !('position' in entity)) return
     const next = new Map(entities)
     next.set(dragEntityId, { ...entity, position: pos } as AnyEntity)
-    set({ entities: next })
+    set({ entities: next, entityGeneration: get().entityGeneration + 1 })
   },
 
   updateDragOrientation: (orient) => {
@@ -233,6 +268,6 @@ export const useExperimentStore = create<ExperimentState_>((set, get) => ({
     if (!entity || !('orientation' in entity)) return
     const next = new Map(entities)
     next.set(dragEntityId, { ...entity, orientation: orient } as AnyEntity)
-    set({ entities: next })
+    set({ entities: next, entityGeneration: get().entityGeneration + 1 })
   },
 }))
