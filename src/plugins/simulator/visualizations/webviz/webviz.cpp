@@ -283,7 +283,10 @@ namespace argos {
          */
         DrainCommandQueue();
         BroadcastExperimentState();
-        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+        {
+          std::unique_lock<std::mutex> lock(m_mtxCommandQueue);
+          m_cvCommandReady.wait_for(lock, std::chrono::milliseconds(250));
+        }
       }
     }
     /* do any cleanups */
@@ -700,36 +703,39 @@ namespace argos {
       return;
     }
 
-    /* Disable fast-forward */
-    m_bFastForwarding = false;
+    /* Enqueue step on sim thread instead of running here (uWS thread) */
+    EnqueueCommand([this]() {
+      /* Disable fast-forward */
+      m_bFastForwarding = false;
 
-    if (!m_cSimulator.IsExperimentFinished()) {
-      /* Drain queued commands before stepping */
-      DrainCommandQueue();
+      if (!m_cSimulator.IsExperimentFinished()) {
+        /* Drain any other queued commands first */
+        DrainCommandQueue();
 
-      /* Run one step */
-      m_cSimulator.UpdateSpace();
+        /* Run one step */
+        m_cSimulator.UpdateSpace();
 
-      /* Make experiment pause */
-      m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_PAUSED;
+        /* Make experiment pause */
+        m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_PAUSED;
 
-      /* Change state and emit signals */
-      m_cWebServer->EmitEvent("Experiment step done", m_eExperimentState);
-    } else {
-      LOG << "[INFO] Experiment done" << '\n';
+        /* Broadcast current experiment state */
+        BroadcastExperimentState();
 
-      /* The experiment is done */
-      m_cSimulator.GetLoopFunctions().PostExperiment();
+        /* Change state and emit signals */
+        m_cWebServer->EmitEvent("step_complete", m_eExperimentState);
+      } else {
+        LOG << "[INFO] Experiment done" << '\n';
 
-      /* Set Experiment state to Done */
-      m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_DONE;
+        /* The experiment is done */
+        m_cSimulator.GetLoopFunctions().PostExperiment();
 
-      /* Change state and emit signals */
-      m_cWebServer->EmitEvent("Experiment done", m_eExperimentState);
-    }
+        /* Set Experiment state to Done */
+        m_eExperimentState = Webviz::EExperimentState::EXPERIMENT_DONE;
 
-    /* Broadcast current experiment state */
-    BroadcastExperimentState();
+        /* Change state and emit signals */
+        m_cWebServer->EmitEvent("Experiment done", m_eExperimentState);
+      }
+    });
   }
 
   /****************************************/
@@ -967,23 +973,7 @@ namespace argos {
     /* Number of step from the simulator */
     cStateJson["steps"] = m_cSpace.GetSimulationClock();
 
-    /* Metadata: available entity types and controllers */
-    cStateJson["entity_types"] = {"box", "cylinder", "foot-bot", "kheperaiv"};
-    {
-      nlohmann::json cControllers = nlohmann::json::array();
-      try {
-        TConfigurationNode& tRoot = m_cSimulator.GetConfigurationRoot();
-        TConfigurationNode& tControllers = GetNode(tRoot, "controllers");
-        TConfigurationNodeIterator itCtrl;
-        for (itCtrl = itCtrl.begin(&tControllers);
-             itCtrl != itCtrl.end(); ++itCtrl) {
-          std::string strCtrlId;
-          GetNodeAttribute(*itCtrl, "id", strCtrlId);
-          cControllers.push_back(strCtrlId);
-        }
-      } catch (const std::exception&) {}
-      cStateJson["controllers"] = cControllers;
-    }
+    /* Metadata removed from broadcast — sent once on WebSocket connect */
 
     /* Real-time ratio: how fast sim runs vs wall clock */
     if (m_bFastForwarding) {
@@ -997,9 +987,6 @@ namespace argos {
       cStateJson["real_time_ratio"] = static_cast<double>(m_fRealTimeFactor);
     }
 
-    /* Type of message */
-    cStateJson["type"] = "broadcast";
-
     /* Send to webserver to broadcast */
     m_cWebServer->Broadcast(cStateJson);
   }
@@ -1008,8 +995,11 @@ namespace argos {
   /****************************************/
 
   void CWebviz::EnqueueCommand(std::function<void()> fn) {
-    std::lock_guard<std::mutex> lock(m_mtxCommandQueue);
-    m_vecCommandQueue.push_back(std::move(fn));
+    {
+      std::lock_guard<std::mutex> lock(m_mtxCommandQueue);
+      m_vecCommandQueue.push_back(std::move(fn));
+    }
+    m_cvCommandReady.notify_one();
   }
 
   /****************************************/

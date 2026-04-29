@@ -54,6 +54,7 @@ namespace argos {
 #include <argos3/core/utility/plugins/dynamic_loading.h>
 
 #include <atomic>
+#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <set>
@@ -225,6 +226,14 @@ namespace argos {
     /** Command queue for thread-safe entity mutations */
     std::mutex m_mtxCommandQueue;
     std::vector<std::function<void()>> m_vecCommandQueue;
+    std::condition_variable m_cvCommandReady;
+
+    /** Dirty-flag entity tracking for delta mode */
+    struct SEntitySnapshot {
+      float pos[3];
+      float orient[4];
+    };
+    std::unordered_map<std::string, SEntitySnapshot> m_mapEntitySnapshots;
 
     /** Next entity ID counter per prefix */
     std::unordered_map<std::string, UInt32> m_mapNextEntityIdx;

@@ -95,6 +95,9 @@ namespace argos {
       /** mutexed string using m_mutex4BroadcastString to broadcast */
       std::string m_strBroadcastString;
 
+      /** mutexed msgpack bytes for binary broadcast */
+      std::vector<uint8_t> m_vecBroadcastMsgpack;
+
       /** A Queue to push events to client */
       std::queue<std::string> m_cEventQueue;
 
