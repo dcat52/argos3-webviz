@@ -30,6 +30,12 @@ These are behind feature flags and need polish before becoming stable:
 ### Per-Entity-Type User Data Filtering
 Filter user_data by entity type in the `.argos` config (e.g., only send for foot-bots). Discovered during PN-026.
 
+## Performance & Scaling
+- **Server-side data pipeline** — msgpack serialization, dirty-flag entity tracking, step threading fix → **Proposal PN-031 created** (#63)
+- **Client rendering pipeline** — lazy computed fields, spatial hash, in-place entity updates → **Proposal PN-032 created** (#64)
+- **Adaptive delivery & memory** — tiered broadcast channels, ring buffer trails, bounded recording → **Proposal PN-033 created** (#65)
+- **Typed arrays for GPU buffers** — Float32Array for positions/orientations, direct GPU upload. Future if PN-032 isn't enough.
+
 ## External / Out of Scope
 - **Spiri entity** — external plugin, not in this repo
 - **glTF foot-bot model** — upgrade from procedural to loaded model (nice-to-have, current procedural model is functional)
