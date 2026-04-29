@@ -987,9 +987,6 @@ namespace argos {
       cStateJson["real_time_ratio"] = static_cast<double>(m_fRealTimeFactor);
     }
 
-    /* Type of message */
-    cStateJson["type"] = "broadcast";
-
     /* Send to webserver to broadcast */
     m_cWebServer->Broadcast(cStateJson);
   }
