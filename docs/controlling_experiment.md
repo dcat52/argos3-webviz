@@ -1,77 +1,178 @@
-# Controlling experiment
+# Controlling the Experiment
 
-Server accepts commands through Websockets "message".
+The server accepts JSON commands over the WebSocket connection.
 
-Each message has the format,
+Every command has the format:
 
 ```json
-{
-  "command": "play",
-  "...": "..."
-}
+{ "command": "<name>", ... }
 ```
-The parameter `command` is mandatory, all others are command specific.
 
+## Simulation Control
 
-### Play
-Command to start/play the experiment.
+### play
+
+Start or resume the experiment.
 
 ```json
 { "command": "play" }
 ```
-**Note:** It will not work if the state of experiment is `Playing`, `Fast-forwarding` or `Done`)
 
-### Pause
-Command to pause the experiment.
+Only works from `INITIALIZED` or `PAUSED` state.
+
+### pause
+
+Pause the experiment.
 
 ```json
 { "command": "pause" }
 ```
-**Note:** It will not work if the state of experiment is `Paused` or `Done`)
 
+Only works from `PLAYING` or `FAST_FORWARDING` state.
 
-### Step
-Command to run one step in the experiment.
+### step
 
-It will pause the experiment after one step is executed.
+Execute one simulation step, then pause.
+
 ```json
 { "command": "step" }
 ```
-**Note:** It will not work if the state of experiment is `Done`).
 
+### fastforward
 
-
-### Fast forward
-Command to Fastforward the experiment.
+Run in fast-forward mode, skipping rendering frames.
 
 ```json
-{
-  "command": "fastforward",
-  "steps": 10
-}
+{ "command": "fastforward", "steps": 10 }
 ```
-`steps` is optional, and defaults to value defined in experiment(.argos) file, like
-```xml
-<visualization>
-  <webviz ff_draw_frames_every=10 />
-</visualization>
-```
-**Note:** It will not work if the state of experiment is `Fast-forwarding` or `Done`)
 
-### Reset
-Command to reset the experiment.
+`steps` is optional (default: value of `ff_draw_frames_every` in XML config). Range: [1, 1000].
+
+### speed
+
+Set the real-time speed multiplier.
+
+```json
+{ "command": "speed", "factor": 2.0 }
+```
+
+`factor` range: (0, 1000]. 1.0 = real-time, 2.0 = 2× speed.
+
+### reset
+
+Reset the experiment to its initial state.
 
 ```json
 { "command": "reset" }
 ```
 
-### Terminate
-Command to terminate the experiment.
+### terminate
+
+End the experiment.
 
 ```json
 { "command": "terminate" }
 ```
 
+## Entity Manipulation
 
-All other valid JSON objects are forwarded to `UserFunctions` class, `HandleCommandFromClient` function, if defined.
-(More information at [Sending data from client](sending_data_from_client.md) )
+### moveEntity
+
+Move an entity to a new position and orientation.
+
+```json
+{
+  "command": "moveEntity",
+  "entity_id": "fb0",
+  "position": { "x": 1.0, "y": 2.0, "z": 0.0 },
+  "orientation": { "x": 0, "y": 0, "z": 0, "w": 1 }
+}
+```
+
+### addEntity
+
+Spawn a new entity.
+
+```json
+{
+  "command": "addEntity",
+  "type": "foot-bot",
+  "id_prefix": "fb",
+  "position": { "x": 0, "y": 0, "z": 0 },
+  "orientation": { "x": 0, "y": 0, "z": 0, "w": 1 },
+  "controller": "my_controller"
+}
+```
+
+Supported types: `box`, `cylinder`, `foot-bot`, `kheperaiv`.
+
+Additional fields by type:
+
+| Type | Fields |
+|------|--------|
+| `box` | `size` ({x,y,z}), `movable` (bool), `mass` (float) |
+| `cylinder` | `radius`, `height`, `movable`, `mass` |
+| `foot-bot` | `controller` (required) |
+| `kheperaiv` | `controller` (required) |
+
+### removeEntity
+
+Remove an entity from the simulation.
+
+```json
+{
+  "command": "removeEntity",
+  "entity_id": "fb0"
+}
+```
+
+### distribute
+
+Spawn multiple entities with randomized placement.
+
+```json
+{
+  "command": "distribute",
+  "type": "foot-bot",
+  "id_prefix": "fb",
+  "quantity": 20,
+  "max_trials": 100,
+  "position_method": "uniform",
+  "position_params": {
+    "min": { "x": -2, "y": -2, "z": 0 },
+    "max": { "x": 2, "y": 2, "z": 0 }
+  },
+  "controller": "my_controller"
+}
+```
+
+Position methods: `uniform`, `gaussian`, `grid`, `constant`.
+
+## UI Actions
+
+### ui_action
+
+Trigger a UI control registered by user functions.
+
+```json
+{
+  "command": "ui_action",
+  "id": "my_button",
+  "type": "button"
+}
+```
+
+See [UI Controls](UI_CONTROLS.md) for details.
+
+## Custom Commands
+
+Any JSON with an unrecognized `command` value (or no `command` key) is forwarded to the user functions' `HandleCommandFromClient` method.
+
+```json
+{
+  "command": "my_custom_command",
+  "data": [1, 2, 3]
+}
+```
+
+See [Sending data from client](sending_data_from_client.md).

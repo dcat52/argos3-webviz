@@ -1,125 +1,133 @@
-## Basic usage
-Edit your Argos Experiment file (.argos), and change the visualization tag as:
+## Basic Usage
+
+### 1. Add webviz to your experiment
+
+Edit your `.argos` experiment file and replace the visualization tag:
+
 ```xml
-.. 
-..
 <visualization>
     <webviz />
     <!-- <qt-opengl /> -->
 </visualization>
-..
-..
 ```
-i.e. add `<webviz/>` in place of default `<qt-opengl />`
 
-
-Then run the argos experiment as usual
+Then run as usual:
 
 ```console
-$ argos3 -c EXPERIMENT_FILE.argos
+$ argos3 -c your_experiment.argos
 ```
-This starts argos experiment with the webviz server.
 
-*Note:* If you do not have an experiment file, you can check [http://argos-sim.info/examples.php](http://argos-sim.info/examples.php)
+The server starts on port 3000 by default.
 
-or run an example project,
+### 2. Open the web client
+
+The modern client lives in `client-next/`. To run it:
+
 ```console
-$ argos3 -c src/testing/testexperiment.argos
+$ cd client-next
+$ npm install
+$ npm run dev
 ```
 
-### Web Client
-The web client code is placed in `client` directory (or download it as zip from the [Releases](https://github.com/NESTLab/argos3-webviz/releases)). This folder needs to be *served* through an http server(for example `apache`, `nginx`, `lighthttpd`).
+Open **http://localhost:5173** in your browser. It auto-connects to `ws://localhost:3000`.
 
-The easiest way is to use python's inbuilt server, as python is already installed in most of *nix systems.
+To use without a live ARGoS instance:
 
-Run these commands in the terminal
-```bash
-$ cd client
-$ python3 -m http.server 8000
+```console
+$ npm run mock    # starts a mock WebSocket server with simulated entities
+$ npm run dev     # in another terminal
 ```
-To host the files in folder client over http port 8000.
 
+### 3. Production build
 
-Now you can access the URL using any browser.
+```console
+$ cd client-next
+$ npm run build          # outputs to client-next/dist/
+$ npx vite preview       # serve the built files
+```
 
-> [http://localhost:8000](http://localhost:8000)
+For remote access, serve with `--host 0.0.0.0`:
 
+```console
+$ npx vite preview --host 0.0.0.0 --port 5173
+```
 
-*Visit [http static servers one-liners](https://gist.github.com/willurd/5720255) for alternatives to the python3 server shown above.*
+The client auto-detects the server hostname from `window.location.hostname`.
 
-<details>
-<summary style="font-size:20px">Configuration</summary>
-<br>
+---
 
-You can check more documentation in [docs](docs/README.md) folder
+## XML Configuration
 
-#### REQUIRED XML CONFIGURATION
+### Minimal
+
 ```xml
-
-  <visualization>
+<visualization>
     <webviz />
-  </visualization>
+</visualization>
 ```
 
-#### OPTIONAL XML CONFIGURATION 
-with all the defaults:
+### All options with defaults
+
 ```xml
-  <visualization>
-    <webviz port=3000
-         broadcast_frequency=10
-         ff_draw_frames_every=2
-         autoplay="true"
-         ssl_key_file="NULL"
-         ssl_cert_file="NULL"
-         ssl_ca_file="NULL"
-         ssl_dh_params_file="NULL"
-         ssl_cert_passphrase="NULL"
+<visualization>
+    <webviz port="3000"
+            broadcast_frequency="10"
+            ff_draw_frames_every="2"
+            autoplay="false"
+            delta="false"
+            keyframe_interval="100"
+            real_time_factor="1.0"
+            extended_state="false"
+            send_entity_data="true"
+            send_global_data="true"
+            entity_data_fields=""
+            ssl_key_file=""
+            ssl_cert_file=""
+            ssl_ca_file=""
+            ssl_dh_params_file=""
+            ssl_cert_passphrase=""
     />
-  </visualization>
+</visualization>
 ```
 
-Where:
+### Parameter reference
 
-`port(unsigned short)`: is the network port to listen incoming traffic on (Websockets and HTTP both share the same port)
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `port` | unsigned short | 3000 | WebSocket and HTTP port. Range: [1, 65535]. Ports < 1024 need root. |
+| `broadcast_frequency` | unsigned short | 10 | Broadcast rate in Hz. Range: [1, 1000]. |
+| `ff_draw_frames_every` | unsigned short | 2 | Steps to skip per broadcast in fast-forward mode. |
+| `autoplay` | bool | false | Start the experiment automatically on launch. |
+| `delta` | bool | false | Enable delta encoding — only send changed entity fields. Reduces bandwidth. |
+| `keyframe_interval` | unsigned int | 100 | In delta mode, send a full schema every N steps. |
+| `real_time_factor` | float | 1.0 | Speed multiplier. 1.0 = real-time, 2.0 = 2× speed, 0 = unlimited. |
+| `extended_state` | bool | false | Include extra entity state (wheel speeds, battery, gripper). |
+| `send_entity_data` | bool | true | Include per-entity `user_data` in broadcasts. |
+| `send_global_data` | bool | true | Include global `user_data` in broadcasts. |
+| `entity_data_fields` | string | "" | Comma-separated whitelist of per-entity user_data fields. Empty = send all. |
+
+### User functions
+
+```xml
+<visualization>
+    <webviz port="3000">
+        <user_functions label="my_webviz_functions"
+                        library="build/libMyWebvizFunctions" />
+    </webviz>
+</visualization>
 ```
-Default: 3000
-Range: [1,65535]
 
-Note: Ports less < 1024 need root privileges.
+See [User Functions](USER_FUNCTIONS.md) for the full guide.
+
+### SSL
+
+```xml
+<webviz port="3000"
+        ssl_key_file="/path/to/key.pem"
+        ssl_cert_file="/path/to/cert.pem"
+        ssl_ca_file="/path/to/ca.pem"
+        ssl_dh_params_file="/path/to/dhparams.pem"
+        ssl_cert_passphrase="your_passphrase" />
 ```
 
-`broadcast_frequency(unsigned short)`: Frequency (in Hertz) at which to broadcast the updates(through websockets)
-```
-Default: 10
-Range: [1,1000]
-```
-`ff_draw_frames_every(unsigned short)`: Number of steps to skip when in fast forward mode
-```
-Default: 2
-```
-`autoplay(bool)`: Allows user to auto-play the simulation at startup
-```
-Default: false
-```
-
-#### SSL CONFIGURATION
-
-SSL can be used to host the server over "wss"(analogous to "https" for websockets).
-
-**NOTE**: You need Webviz to be compiled with OpenSSL support to use SSL.
-
-You might have to use any combination of the following to enable SSL, depending upon your implementation.
-
-- ssl_key_file
-- ssl_cert_file
-- ssl_ca_file
-- ssl_dh_params_file
-- ssl_cert_passphrase
-
-Where file parameters supports relative and absolute paths.
-
-**NOTE**: Webviz need read access to the files.
-
-You can check more documentation in [docs](docs/README.md) folder
-
-</details>
+Requires webviz compiled with OpenSSL support.
