@@ -12,7 +12,8 @@ beforeEach(() => {
     playing: false, isArgosrec: false, keyframeCache: [], cacheInterval: 200,
   })
   useExperimentStore.setState({
-    entities: new Map(), prevEntities: new Map(), computedFields: new Map(),
+    entities: new Map(), prevPositions: new Map(), computedFields: new Map(),
+    entityGeneration: 0,
     arena: null, drawCommands: [], floorData: null, userData: undefined,
   })
 })
@@ -99,7 +100,7 @@ describe('seekTo with keyframe cache', () => {
     expect((r0 as any).position.x).toBeCloseTo(0.7)
   })
 
-  test('seek sets prevEntities from frame target-1', () => {
+  test('seek sets prevPositions from frame target-1', () => {
     const frames = buildDeltaFrames(2, 10)
     const cache = buildKeyframeCache(frames, 5)
 
@@ -109,10 +110,10 @@ describe('seekTo with keyframe cache', () => {
     })
 
     useRecordingStore.getState().seekTo(6)
-    const prev = useExperimentStore.getState().prevEntities
-    const prevR0 = prev.get('r0')!
-    // prevEntities should be from frame 5: position.x = 5 * 0.1 = 0.5
-    expect((prevR0 as any).position.x).toBeCloseTo(0.5)
+    const prev = useExperimentStore.getState().prevPositions
+    const prevR0Pos = prev.get('r0')!
+    // prevPositions should be from frame 5: position.x = 5 * 0.1 = 0.5
+    expect(prevR0Pos.x).toBeCloseTo(0.5)
   })
 
   test('seek to frame 0 works', () => {
