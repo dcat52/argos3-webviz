@@ -290,6 +290,7 @@ namespace argos {
           static std::string strBroadcastString;
           static std::string strEventString;
           static std::string strLogString;
+          static std::vector<uint8_t> vecBroadcastMsgpack;
 
           while (b_IsServerRunning) {
             /* stop the timer now to get total time spent */
@@ -319,6 +320,7 @@ namespace argos {
             {
               std::lock_guard<std::mutex> guard(m_mutex4BroadcastString);
               strBroadcastString = m_strBroadcastString;
+              vecBroadcastMsgpack = m_vecBroadcastMsgpack;
             }  // End of mutex block: m_mutex4BroadcastString
 
             /* Mutex block for m_mutex4EventQueue */
@@ -373,6 +375,16 @@ namespace argos {
                       "broadcasts",
                       strBroadcastString,
                       uWS::OpCode::TEXT,
+                      true);  // Compress = true
+                  }
+
+                  if (!vecBroadcastMsgpack.empty()) {
+                    wsStruct.m_pcWS->publish(
+                      "broadcasts.bin",
+                      std::string_view(
+                        reinterpret_cast<const char*>(vecBroadcastMsgpack.data()),
+                        vecBroadcastMsgpack.size()),
+                      uWS::OpCode::BINARY,
                       true);  // Compress = true
                   }
 
@@ -454,6 +466,7 @@ namespace argos {
        * This enables us to discard stale experiment state
        */
       m_strBroadcastString = cMyJson.dump();
+      m_vecBroadcastMsgpack = nlohmann::json::to_msgpack(cMyJson);
     }
   }  // namespace Webviz
 }  // namespace argos

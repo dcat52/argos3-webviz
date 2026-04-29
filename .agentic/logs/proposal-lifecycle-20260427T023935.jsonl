@@ -1,0 +1,2 @@
+{"timestamp": "2026-04-27T02:39:35.964050+00:00", "workflow": "proposal-lifecycle", "event_type": "workflow_start", "step": null, "detail": {"artifact": null}, "output_file": null}
+{"timestamp": "2026-04-28T22:35:36.275584+00:00", "workflow": "proposal-lifecycle", "event_type": "workflow_complete", "step": null, "detail": {"steps_completed": 0, "total_steps": 0, "user_prompts": 0, "autonomous_turns": 0}, "output_file": null}
