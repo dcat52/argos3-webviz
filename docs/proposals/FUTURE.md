@@ -35,6 +35,7 @@ Filter user_data by entity type in the `.argos` config (e.g., only send for foot
 - **Client rendering pipeline** — lazy computed fields, spatial hash, in-place entity updates → **Proposal PN-032 created** (#64)
 - **Adaptive delivery & memory** — tiered broadcast channels, ring buffer trails, bounded recording → **Proposal PN-033 created** (#65)
 - **Typed arrays for GPU buffers** — Float32Array for positions/orientations, direct GPU upload. Future if PN-032 isn't enough.
+- **Delta mode schema race condition** — fast sim speeds can overwrite keyframe schemas before broadcast. See #69.
 
 ## External / Out of Scope
 - **Spiri entity** — external plugin, not in this repo
