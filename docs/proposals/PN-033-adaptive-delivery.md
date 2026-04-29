@@ -4,7 +4,7 @@ Created: 2026-04-28
 Baseline Commit: `2a9c90b` (`master`)
 GitHub Issue: #65
 
-## Status: 🟡 DESIGN
+## Status: ✅ COMPLETE
 <!-- 📋 INVESTIGATION → 🟡 DESIGN → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -218,3 +218,4 @@ class RingBuffer<T> {
 |------|--------|-------|
 | 2026-04-28 | Initial draft | 📋 INVESTIGATION |
 | 2026-04-28 | Investigation complete, design doc created. Resolved: 3-channel split (core/visual/data), ring buffer with Symbol.iterator, recording cap at 10K frames/100MB | 🟡 DESIGN |
+| 2026-04-28 | Client-side implementation complete. PR #67 merged. Server-side tiered channels designed but needs C++ build env. | ✅ COMPLETE |
