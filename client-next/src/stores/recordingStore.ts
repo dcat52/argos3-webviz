@@ -10,6 +10,8 @@ interface RecordedFrame {
   message: BroadcastMessage
 }
 
+const MAX_RECORDING_FRAMES = 10_000
+
 type RecordingState = 'idle' | 'recording' | 'replaying'
 
 export interface KeyframeSnapshot {
@@ -336,6 +338,11 @@ export const useRecordingStore = create<RecordingStore>((set, get) => ({
 
   captureFrame: (msg) => {
     if (get().state !== 'recording') return
+    if (get().frames.length >= MAX_RECORDING_FRAMES) {
+      console.warn(`[Recording] Frame cap reached (${MAX_RECORDING_FRAMES}), stopping recording`)
+      get().stopRecording()
+      return
+    }
     set((s) => {
       const frames = [...s.frames, { timestamp: performance.now(), message: msg }]
       return { frames, totalFrames: frames.length }

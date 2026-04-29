@@ -3,11 +3,12 @@ import { Line } from '@react-three/drei'
 import { useVizConfigStore } from '@/stores/vizConfigStore'
 import { useExperimentStore } from '@/stores/experimentStore'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { RingBuffer } from '@/lib/ringBuffer'
 
 export function TrailRenderer() {
   const config = useVizConfigStore((s) => s.config.trails)
   const entities = useExperimentStore((s) => s.entities)
-  const buf = useRef<Map<string, [number, number, number][]>>(new Map())
+  const buf = useRef<Map<string, RingBuffer<[number, number, number]>>>(new Map())
   const [render, setRender] = useState(0)
 
   useEffect(() => {
@@ -16,11 +17,10 @@ export function TrailRenderer() {
       if (!('position' in entity)) continue
       const { x, y, z } = entity.position
       let trail = buf.current.get(entity.id)
-      if (!trail) { trail = []; buf.current.set(entity.id, trail) }
-      const last = trail[trail.length - 1]
+      if (!trail) { trail = new RingBuffer(config.length); buf.current.set(entity.id, trail) }
+      const last = trail.last()
       if (!last || last[0] !== x || last[1] !== y || last[2] !== z) {
         trail.push([x, y, z])
-        if (trail.length > config.length) trail.shift()
         changed = true
       }
     }
@@ -34,18 +34,20 @@ export function TrailRenderer() {
 
   return (
     <>
-      {Array.from(buf.current.entries()).map(([id, points]) =>
-        points.length >= 2 ? (
+      {Array.from(buf.current.entries()).map(([id, ring]) => {
+        if (ring.length < 2) return null
+        const points = [...ring].map(p => [...p] as [number, number, number])
+        return (
           <Line
             key={`${id}-${render}`}
-            points={points.map(p => [...p] as [number, number, number])}
+            points={points}
             color={useSettingsStore.getState().trailColor}
             lineWidth={1.5}
             transparent
             opacity={config.opacity}
           />
-        ) : null
-      )}
+        )
+      })}
     </>
   )
 }
