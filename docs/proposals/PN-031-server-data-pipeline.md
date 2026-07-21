@@ -4,7 +4,7 @@ Created: 2026-04-28
 Baseline Commit: `2a9c90b` (`master`)
 GitHub Issue: #63
 
-## Status: 🟡 DESIGN
+## Status: 🟣 VERIFICATION
 <!-- 📋 INVESTIGATION → 🟡 DESIGN → 🔵 IMPLEMENTATION → 🟣 VERIFICATION → ✅ COMPLETE / 🔴 ABANDONED -->
 
 ## Goal
@@ -211,3 +211,5 @@ StepExperiment():
 |------|--------|-------|
 | 2026-04-28 | Initial draft | 📋 INVESTIGATION |
 | 2026-04-28 | Investigation complete, design doc created. Resolved: topic-based format (broadcasts vs broadcasts.bin), condition_variable for step wake-up, dirty tracking via SEntitySnapshot memcmp | 🟡 DESIGN |
+| 2026-04-29 | Implementation: client msgpack decode, C++ step unification (condition_variable), msgpack broadcast, metadata removed from broadcast. C++ untested (no ARGoS build env). | 🔵 IMPLEMENTATION |
+| 2026-04-29 | Runtime verified in Apptainer. Msgpack 28% smaller. Step latency unchanged at 10Hz (broadcaster-gated), 9ms at 100Hz. uWS thread no longer blocked during step. CMakeLists fix for draw_functions included. | 🟣 VERIFICATION |

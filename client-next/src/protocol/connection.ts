@@ -1,11 +1,13 @@
 import type { ServerMessage, ClientCommand } from '../types/protocol'
 import { isServerMessage } from './guards'
+import { decode } from '@msgpack/msgpack'
 
 export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected'
 
 export interface ConnectionConfig {
   url: string
   channels?: ('broadcasts' | 'events' | 'logs')[]
+  binary?: boolean  // true = subscribe to broadcasts.bin (msgpack), false = broadcasts (JSON)
   reconnect?: boolean
   reconnectInterval?: number
   maxReconnectInterval?: number
@@ -48,6 +50,7 @@ export class WebvizConnection {
     const url = this.buildUrl()
     this.setStatus('connecting')
     this.ws = new WebSocket(url)
+    this.ws.binaryType = 'arraybuffer'
 
     this.ws.onopen = () => {
       console.log('[WebvizConnection] connected to', url)
@@ -58,7 +61,12 @@ export class WebvizConnection {
     this.ws.onmessage = (ev: MessageEvent) => {
       if (!this.onMessage) return
       try {
-        const data: unknown = JSON.parse(String(ev.data))
+        let data: unknown
+        if (ev.data instanceof ArrayBuffer) {
+          data = decode(new Uint8Array(ev.data))
+        } else {
+          data = JSON.parse(String(ev.data))
+        }
         if (isServerMessage(data)) this.onMessage(data)
       } catch {
         // ignore malformed messages
@@ -95,7 +103,12 @@ export class WebvizConnection {
   }
 
   private buildUrl(): string {
-    return this.config.url
+    const base = this.config.url
+    const useBinary = this.config.binary !== false
+    const broadcastTopic = useBinary ? 'broadcasts.bin' : 'broadcasts'
+    const channels = [broadcastTopic, 'events', 'logs'].join(',')
+    const sep = base.includes('?') ? '&' : '?'
+    return `${base}${sep}${channels}`
   }
 
   private scheduleReconnect(): void {
